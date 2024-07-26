@@ -25,6 +25,7 @@ namespace ModuloConsultasGiGas
     public partial class Consulta : Window
     {
         private string tempFilePath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "empresas_temp.json");
+        private string codigoEmpresaSeleccionada;
         private List<Empresa> listaEmpresas = new List<Empresa>();
         public Consulta()
         {
@@ -154,10 +155,78 @@ namespace ModuloConsultasGiGas
 
                     var consultas = new ConsultasBase();
                     consultas.ConsultarDatosFacturas(selectedEmpresa.Emprobra);
+
+                    codigoEmpresaSeleccionada = selectedEmpresa.Emprobra;
+
+                    // Carga las facturas en memoria
+                    CargarFacturasEnMemoria();
                 }
             }
         }
 
+
+
+        private void BuscarFactura_Click(object sender, RoutedEventArgs e)
+        {
+            if (!string.IsNullOrEmpty(codigoEmpresaSeleccionada))
+            {
+                string searchText = searchFactura.Text.Trim();
+                BuscarYMostrarFacturas(searchText);
+            }
+            else
+            {
+                MessageBox.Show("Seleccione una empresa primero.");
+            }
+        }
+
+
+
+        private void BuscarYMostrarFacturas(string searchText)
+        {
+            if (facturasEnMemoria == null)
+            {
+                CargarFacturasEnMemoria();
+            }
+
+            var resultados = new List<Dictionary<string, object>>();
+
+            foreach (var tabla in facturasEnMemoria)
+            {
+                resultados.AddRange(tabla.Value.Where(f => f.Values.Any(val => val != null && val.ToString().Contains(searchText, StringComparison.OrdinalIgnoreCase))));
+            }
+
+            facturasListView.ItemsSource = resultados.Select(r => new
+            {
+                Factura = r.ContainsKey("Factura") ? r["Factura"] : "",
+                Cliente = r.ContainsKey("Cliente") ? r["Cliente"] : "",
+                Fecha = r.ContainsKey("Fecha") ? r["Fecha"] : "",
+                Total = r.ContainsKey("Total") ? r["Total"] : ""
+            }).ToList();
+        }
+
+
+        private Dictionary<string, List<Dictionary<string, object>>> facturasEnMemoria;
+
+        private void CargarFacturasEnMemoria()
+        {
+            try
+            {
+                string tempFilePathFacturas = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "facturas_temp.json");
+                if (File.Exists(tempFilePathFacturas))
+                {
+                    string json = File.ReadAllText(tempFilePathFacturas);
+                    facturasEnMemoria = JsonConvert.DeserializeObject<Dictionary<string, List<Dictionary<string, object>>>>(json);
+                }
+                else
+                {
+                    MessageBox.Show("No se encontraron datos de facturas.");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al cargar los datos de facturas: " + ex.Message);
+            }
+        }
 
     }
 }
