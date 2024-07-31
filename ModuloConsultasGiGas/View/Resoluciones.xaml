@@ -1,0 +1,43 @@
+﻿<Window x:Class="ModuloConsultasGiGas.View.Resoluciones"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ModuloConsultasGiGas.View"
+        mc:Ignorable="d"
+        Title="Resoluciones" Height="650" Width="900">
+    <Grid>
+        <Border CornerRadius="11" BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Center" Height="29" Margin="0,19,0,0" VerticalAlignment="Top" Width="180">
+            <Grid>
+                <TextBox Name="searchResolucion" 
+                     VerticalAlignment="Center" 
+                     HorizontalAlignment="Stretch"
+                     Margin="10,0,10,0"
+                     Background="Transparent" 
+                     BorderThickness="0"
+                     FontSize="14"
+                     Padding="5,0,5,0"
+                     TextChanged="SearchResolucion_TextChanged"
+                     KeyDown="SearchResolucion_KeyDown"/>
+                <TextBlock Name="placeholderResolucion" 
+                       VerticalAlignment="Center" 
+                       HorizontalAlignment="Left"
+                       FontSize="14" 
+                       Foreground="Gray" 
+                       IsHitTestVisible="False" 
+                       Margin="10,0,0,0"
+                       Text="Buscar Resolución"/>
+            </Grid>
+        </Border>
+        <!-- TextBox para mostrar la respuesta de la API -->
+        <TextBox Name="responseTextBox" 
+                 VerticalAlignment="Top" 
+                 HorizontalAlignment="Center" 
+                 Margin="0,60,0,0"
+                 Width="816" 
+                 Height="536"
+                 TextWrapping="Wrap"
+                 VerticalScrollBarVisibility="Auto"
+                 IsReadOnly="True"/>
+    </Grid>
+</Window>

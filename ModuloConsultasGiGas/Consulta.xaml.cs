@@ -17,6 +17,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using ModuloConsultasGiGas.Model;
+using ModuloConsultasGiGas.View;
 
 namespace ModuloConsultasGiGas
 {
@@ -28,6 +29,7 @@ namespace ModuloConsultasGiGas
         private string tempFilePath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "empresas_temp.json");
         private string codigoEmpresaSeleccionada;
         private List<Empresa> listaEmpresas = new List<Empresa>();
+        private static Window resolucionesWindow;
         public Consulta()
         {
             InitializeComponent();
@@ -478,6 +480,24 @@ namespace ModuloConsultasGiGas
         }
 
         private void facturasListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+        }
+       
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (resolucionesWindow == null || !resolucionesWindow.IsVisible)
+            {
+                resolucionesWindow = new Resoluciones();
+                resolucionesWindow.Show();
+            }
+            else
+            {
+                resolucionesWindow.Focus();
+            }
+        }
+
+        private void MainFrame_Navigated(object sender, System.Windows.Navigation.NavigationEventArgs e)
         {
 
         }

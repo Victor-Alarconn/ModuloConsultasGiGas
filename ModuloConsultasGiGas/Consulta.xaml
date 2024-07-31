@@ -97,6 +97,7 @@
                     </StackPanel>
                 </Border>
                 <Button Content="BUSCAR DOCUMENTO" HorizontalAlignment="Left" Height="29" Margin="214,125,0,0" VerticalAlignment="Top" Width="137" Click="BuscarFactura_Click"/>
+                <Frame x:Name="MainFrame" NavigationUIVisibility="Hidden" Navigated="MainFrame_Navigated" Margin="1,-59,-76,9" />
             </Grid>
         </Border>
         <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Center" Height="242" Margin="0,260,0,0" VerticalAlignment="Top" Width="1340">
@@ -108,6 +109,9 @@
                 </ListView.View>
             </ListView>
         </Border>
+        <Grid Margin="30,320,95,0"/>
+
+        <Button Content="Resoluciones" HorizontalAlignment="Left" Height="24" Margin="917,14,0,0" VerticalAlignment="Top" Width="132" BorderBrush="DarkViolet" Click="Button_Click"/>
 
 
 

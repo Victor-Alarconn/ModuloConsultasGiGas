@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34728.123
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModuloConsultasGiGas", "ModuloConsultasGiGas\ModuloConsultasGiGas.csproj", "{47AE9E77-D341-4E09-9D2F-7D5019BCE5A9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ModuloConsultasGiGas", "ModuloConsultasGiGas\ModuloConsultasGiGas.csproj", "{47AE9E77-D341-4E09-9D2F-7D5019BCE5A9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
