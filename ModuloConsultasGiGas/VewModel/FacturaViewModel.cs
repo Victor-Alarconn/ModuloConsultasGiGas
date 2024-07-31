@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ModuloConsultasGiGas.Modelo;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -10,6 +11,8 @@ namespace ModuloConsultasGiGas.Model
 {
     public class FacturaViewModel : INotifyPropertyChanged
     {
+
+
         public ICommand ExportPdfCommand { get; private set; }
         public ICommand ExportXmlCommand { get; private set; }
         public ICommand SendEmailCommand { get; private set; }

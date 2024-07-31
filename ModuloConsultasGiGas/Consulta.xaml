@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ModuloConsultasGiGas"
         mc:Ignorable="d"
-        Title="Consulta" Height="550" Width="1300"
+        Title="Consulta" Height="550" Width="1400"
         Closed="Window_Closed">
 
     <Grid>
@@ -99,36 +99,16 @@
                 <Button Content="BUSCAR DOCUMENTO" HorizontalAlignment="Left" Height="29" Margin="214,125,0,0" VerticalAlignment="Top" Width="137" Click="BuscarFactura_Click"/>
             </Grid>
         </Border>
-        <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Center" Height="242" Margin="0,260,0,0" VerticalAlignment="Top" Width="1210">
-            <ListView Name="facturasListView" HorizontalAlignment="Left" Height="222" VerticalAlignment="Center" Width="1180" SelectionChanged="facturasListView_SelectionChanged" Margin="19,0,0,0">
+        <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Center" Height="242" Margin="0,260,0,0" VerticalAlignment="Top" Width="1340">
+            <ListView Name="facturasListView" HorizontalAlignment="Left" Height="222" VerticalAlignment="Center" Width="1310" SelectionChanged="facturasListView_SelectionChanged" Margin="19,0,0,0">
                 <ListView.View>
-                    <GridView>
-                        <GridViewColumn Header="Factura" DisplayMemberBinding="{Binding Factura}" Width="100"/>
-                        <GridViewColumn Header="Recibo" DisplayMemberBinding="{Binding Recibo}" Width="100"/>
-                        <GridViewColumn Header="Cliente" DisplayMemberBinding="{Binding Cliente}" Width="100"/>
-                        <GridViewColumn Header="Estado" DisplayMemberBinding="{Binding Estado}" Width="100"/>
-                        <GridViewColumn Header="Msm Error" DisplayMemberBinding="{Binding Error}" Width="100"/>
-                        <GridViewColumn Header="Memo" DisplayMemberBinding="{Binding Memo}" Width="100"/>
-                        <GridViewColumn Header="Fecha" DisplayMemberBinding="{Binding Fecha}" Width="100"/>
-                        <GridViewColumn Header="Encabezado" DisplayMemberBinding="{Binding Encabezado}" Width="100"/>
-                        <GridViewColumn Header="Encabezado_NC" DisplayMemberBinding="{Binding Encabezado_NC}" Width="110"/>
-                        <GridViewColumn Header="Articulos" DisplayMemberBinding="{Binding Articulos}" Width="100"/>
-                        <GridViewColumn Header="Metodos Pago" DisplayMemberBinding="{Binding Metodo}" Width="100"/>
-                        <GridViewColumn Header="Acciones" Width="200">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal">
-                                        <Button Content="PDF" Command="{Binding DataContext.ExportPdfCommand, RelativeSource={RelativeSource AncestorType=ListView}}" CommandParameter="{Binding}" Margin="5"/>
-                                        <Button Content="XML" Command="{Binding DataContext.ExportXmlCommand, RelativeSource={RelativeSource AncestorType=ListView}}" CommandParameter="{Binding}" Margin="5"/>
-                                        <Button Content="ENVIO" Command="{Binding DataContext.SendEmailCommand, RelativeSource={RelativeSource AncestorType=ListView}}" CommandParameter="{Binding}" Margin="5"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
+                    <GridView x:Name="facturasGridView">
+                        <!-- Las columnas se agregarán en el código detrás -->
                     </GridView>
                 </ListView.View>
             </ListView>
         </Border>
+
 
 
     </Grid>

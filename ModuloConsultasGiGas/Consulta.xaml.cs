@@ -16,6 +16,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using ModuloConsultasGiGas.Model;
 
 namespace ModuloConsultasGiGas
 {
@@ -31,6 +32,7 @@ namespace ModuloConsultasGiGas
         {
             InitializeComponent();
             ConsultarDatos("empresas");
+            ConfigurarColumnas();
         }
 
         private void ConsultarDatos(string databaseName)
@@ -198,7 +200,17 @@ namespace ModuloConsultasGiGas
             // Buscar en la tabla 'fac' primero
             if (facturasEnMemoria.ContainsKey("fac"))
             {
-                var resultadosFac = facturasEnMemoria["fac"].Where(f => f.ContainsKey("factura") && f["factura"].ToString().Contains(searchText, StringComparison.OrdinalIgnoreCase)).ToList();
+                List<Dictionary<string, object>> resultadosFac;
+
+                // Si searchText está vacío, muestra todas las facturas
+                if (string.IsNullOrEmpty(searchText))
+                {
+                    resultadosFac = facturasEnMemoria["fac"];
+                }
+                else
+                {
+                    resultadosFac = facturasEnMemoria["fac"].Where(f => f.ContainsKey("factura") && f["factura"].ToString().Contains(searchText, StringComparison.OrdinalIgnoreCase)).ToList();
+                }
 
                 // Mensaje de depuración para ver el número de resultados encontrados
                 Console.WriteLine("Resultados encontrados en 'fac': " + resultadosFac.Count);
@@ -211,10 +223,20 @@ namespace ModuloConsultasGiGas
                     {
                         var resultado = new Dictionary<string, object>(fac);
 
-                        // Buscar en las demás tablas
-                        resultado["Fecha"] = BuscarEnTabla("xxxxccfc", "fecha", fac["factura"]);
-                        resultado["Encabezado"] = BuscarEnTabla("xxxxccfc", "factura", fac["factura"]);
-                        resultado["Encabezado_NC"] = BuscarEnTabla("xxxxcmbt", "recibo", fac["factura"]);
+                        // Determinar si es una factura o una devolución
+                        bool esDevolucion = fac.ContainsKey("recibo") && !string.IsNullOrEmpty(fac["recibo"]?.ToString());
+
+                        if (esDevolucion)
+                        {
+                            resultado["Fecha"] = BuscarEnTabla("xxxxcmbt", "ffinal", fac["recibo"], "recibo");
+                            resultado["Encabezado_nc"] = ContarEnTabla("xxxxcmbt", "recibo", fac["factura"]);
+                        }
+                        else
+                        {
+                            resultado["Fecha"] = BuscarEnTabla("xxxxccfc", "fecha", fac["factura"], "factura");
+                            resultado["Encabezado"] = ContarEnTabla("xxxxccfc", "factura", fac["factura"]);
+                        }
+
                         resultado["Articulos"] = ContarArticulosEnTabla("xxxxmvin", fac["factura"], "");
                         resultado["Metodo"] = ContarEnTabla("xxxxccpg", "factura", fac["factura"]);
 
@@ -231,7 +253,7 @@ namespace ModuloConsultasGiGas
                         Memo = r.ContainsKey("dato_qr") ? r["dato_qr"] : "",
                         Fecha = r.ContainsKey("Fecha") ? r["Fecha"] : "",
                         Encabezado = r.ContainsKey("Encabezado") ? r["Encabezado"] : "",
-                        Encabezado_NC = r.ContainsKey("Encabezado_NC") ? r["Encabezado_NC"] : "",
+                        Encabezado_NC = r.ContainsKey("Encabezado_nc") ? r["Encabezado_nc"] : "",
                         Articulos = r.ContainsKey("Articulos") ? r["Articulos"] : "",
                         Metodo = r.ContainsKey("Metodo") ? r["Metodo"] : ""
                     }).ToList();
@@ -247,15 +269,11 @@ namespace ModuloConsultasGiGas
             }
         }
 
-
-
-
-
-        private object BuscarEnTabla(string tabla, string columna, object valor)
+        private object BuscarEnTabla(string tabla, string columna, object valor, string nombre)
         {
             if (facturasEnMemoria.ContainsKey(tabla))
             {
-                var registro = facturasEnMemoria[tabla].FirstOrDefault(f => f.ContainsKey(columna) && f[columna].ToString() == valor.ToString());
+                var registro = facturasEnMemoria[tabla].FirstOrDefault(f => f.ContainsKey(columna) && f[nombre]?.ToString() == valor?.ToString());
                 if (registro != null && registro.ContainsKey(columna))
                 {
                     Console.WriteLine($"Encontrado en {tabla}: {columna} = {registro[columna]}");
@@ -270,7 +288,7 @@ namespace ModuloConsultasGiGas
         {
             if (facturasEnMemoria.ContainsKey(tabla))
             {
-                var count = facturasEnMemoria[tabla].Count(f => f.ContainsKey("factura") && f["factura"].ToString() == valorFactura.ToString());
+                var count = facturasEnMemoria[tabla].Count(f => f.ContainsKey("factura") && f["factura"]?.ToString() == valorFactura?.ToString());
                 Console.WriteLine($"Contar en {tabla}: {count} registros para factura {valorFactura}");
                 return count;
             }
@@ -282,7 +300,7 @@ namespace ModuloConsultasGiGas
         {
             if (facturasEnMemoria.ContainsKey(tabla))
             {
-                var count = facturasEnMemoria[tabla].Count(f => f.ContainsKey("factura") && f["factura"].ToString() == valorFactura.ToString() && (string.IsNullOrEmpty(recibo) ? string.IsNullOrEmpty(f["recibo"].ToString()) : f["recibo"].ToString() == recibo));
+                var count = facturasEnMemoria[tabla].Count(f => f.ContainsKey("factura") && f["factura"]?.ToString() == valorFactura?.ToString() && (string.IsNullOrEmpty(recibo) ? string.IsNullOrEmpty(f["recibo"]?.ToString()) : f["recibo"]?.ToString() == recibo));
                 Console.WriteLine($"Contar artículos en {tabla}: {count} registros para factura {valorFactura} con recibo '{recibo}'");
                 return count;
             }
@@ -291,7 +309,97 @@ namespace ModuloConsultasGiGas
         }
 
 
+        private void ConfigurarColumnas()
+        {
+            AgregarColumna("Factura", "Factura");
+            AgregarColumna("Recibo", "Recibo");
+            AgregarColumna("Cliente", "Cliente");
+            AgregarColumna("Estado", "Estado");
+            AgregarColumna("Msm Error", "Error");
+            AgregarColumna("Memo", "Memo");
+            AgregarColumna("Fecha", "Fecha");
+            AgregarColumna("Encabezado", "Encabezado");
+            AgregarColumna("Encabezado_NC", "Encabezado_NC");
+            AgregarColumna("Articulos", "Articulos");
+            AgregarColumna("Metodos Pago", "Metodo");
+            // Agregar más columnas si es necesario
+        }
 
+        private void AgregarColumna(string header, string bindingPath)
+        {
+            GridViewColumn column = new GridViewColumn
+            {
+                Header = header,
+                DisplayMemberBinding = new Binding(bindingPath),
+                Width = 100
+            };
+
+            // Asignar el evento de clic
+            column.HeaderTemplate = CrearHeaderTemplate(header, bindingPath);
+
+            facturasGridView.Columns.Add(column);
+        }
+
+        private DataTemplate CrearHeaderTemplate(string header, string bindingPath)
+        {
+            DataTemplate template = new DataTemplate();
+            FrameworkElementFactory factory = new FrameworkElementFactory(typeof(TextBlock));
+            factory.SetValue(TextBlock.TextProperty, header);
+            factory.SetValue(TextBlock.TagProperty, bindingPath);
+            factory.AddHandler(TextBlock.MouseLeftButtonUpEvent, new MouseButtonEventHandler(Header_Click));
+            template.VisualTree = factory;
+            return template;
+        }
+
+        private void Header_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is TextBlock textBlock && textBlock.Tag is string sortBy)
+            {
+                OrdenarPorColumna(sortBy);
+            }
+        }
+
+
+        private void OrdenarPorColumna(string sortBy)
+        {
+            if (facturasListView.ItemsSource is List<FacturaViewModel> items)
+            {
+                var sortedItems = items.OrderBy(item =>
+                {
+                    var property = typeof(FacturaViewModel).GetProperty(sortBy);
+                    return property != null ? property.GetValue(item)?.ToString() : string.Empty;
+                }).ToList();
+
+                facturasListView.ItemsSource = sortedItems;
+            }
+        }
+
+
+
+        private void facturasListView_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            var columnHeader = VisualTreeHelper.GetParent(e.OriginalSource as DependencyObject) as GridViewColumnHeader;
+            if (columnHeader != null)
+            {
+                string sortBy = columnHeader.Tag.ToString();
+                SortListView(sortBy);
+            }
+        }
+
+        private void SortListView(string sortBy)
+        {
+            if (facturasListView.ItemsSource is List<object> items)
+            {
+                // Ordenar los elementos de acuerdo al encabezado seleccionado
+                var sortedItems = items.OrderBy(item =>
+                {
+                    var property = item.GetType().GetProperty(sortBy);
+                    return property != null ? property.GetValue(item)?.ToString() : string.Empty;
+                }).ToList();
+
+                facturasListView.ItemsSource = sortedItems;
+            }
+        }
 
 
 
