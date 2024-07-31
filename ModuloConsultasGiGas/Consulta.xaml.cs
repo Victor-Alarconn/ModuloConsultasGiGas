@@ -322,7 +322,8 @@ namespace ModuloConsultasGiGas
             AgregarColumna("Encabezado_NC", "Encabezado_NC");
             AgregarColumna("Articulos", "Articulos");
             AgregarColumna("Metodos Pago", "Metodo");
-            // Agregar más columnas si es necesario
+            AgregarColumnaAcciones(); // Agrega la columna de acciones
+                                      // Agregar más columnas si es necesario
         }
 
         private void AgregarColumna(string header, string bindingPath)
@@ -340,6 +341,52 @@ namespace ModuloConsultasGiGas
             facturasGridView.Columns.Add(column);
         }
 
+        private void AgregarColumnaAcciones()
+        {
+            GridViewColumn accionesColumn = new GridViewColumn
+            {
+                Header = "Acciones",
+                Width = 150,
+                CellTemplate = CrearAccionesTemplate()
+            };
+
+            facturasGridView.Columns.Add(accionesColumn);
+        }
+
+        private DataTemplate CrearAccionesTemplate()
+        {
+            DataTemplate template = new DataTemplate();
+            FrameworkElementFactory stackPanelFactory = new FrameworkElementFactory(typeof(StackPanel));
+            stackPanelFactory.SetValue(StackPanel.OrientationProperty, Orientation.Horizontal);
+
+            // Botón PDF
+            FrameworkElementFactory pdfButtonFactory = new FrameworkElementFactory(typeof(Button));
+            pdfButtonFactory.SetValue(Button.ContentProperty, "PDF");
+            pdfButtonFactory.SetValue(Button.MarginProperty, new Thickness(5));
+            pdfButtonFactory.SetBinding(Button.CommandProperty, new Binding("DataContext.ExportPdfCommand") { RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(ListView), 1) });
+            pdfButtonFactory.SetBinding(Button.CommandParameterProperty, new Binding("."));
+            stackPanelFactory.AppendChild(pdfButtonFactory);
+
+            // Botón XML
+            FrameworkElementFactory xmlButtonFactory = new FrameworkElementFactory(typeof(Button));
+            xmlButtonFactory.SetValue(Button.ContentProperty, "XML");
+            xmlButtonFactory.SetValue(Button.MarginProperty, new Thickness(5));
+            xmlButtonFactory.SetBinding(Button.CommandProperty, new Binding("DataContext.ExportXmlCommand") { RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(ListView), 1) });
+            xmlButtonFactory.SetBinding(Button.CommandParameterProperty, new Binding("."));
+            stackPanelFactory.AppendChild(xmlButtonFactory);
+
+            // Botón ENVIO
+            FrameworkElementFactory envioButtonFactory = new FrameworkElementFactory(typeof(Button));
+            envioButtonFactory.SetValue(Button.ContentProperty, "ENVIO");
+            envioButtonFactory.SetValue(Button.MarginProperty, new Thickness(5));
+            envioButtonFactory.SetBinding(Button.CommandProperty, new Binding("DataContext.SendEmailCommand") { RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(ListView), 1) });
+            envioButtonFactory.SetBinding(Button.CommandParameterProperty, new Binding("."));
+            stackPanelFactory.AppendChild(envioButtonFactory);
+
+            template.VisualTree = stackPanelFactory;
+            return template;
+        }
+
         private DataTemplate CrearHeaderTemplate(string header, string bindingPath)
         {
             DataTemplate template = new DataTemplate();
@@ -353,26 +400,30 @@ namespace ModuloConsultasGiGas
 
         private void Header_Click(object sender, MouseButtonEventArgs e)
         {
-            if (sender is TextBlock textBlock && textBlock.Tag is string sortBy)
+            if (sender is TextBlock textBlock)
             {
-                OrdenarPorColumna(sortBy);
+                string sortBy = textBlock.Tag as string;
+                if (!string.IsNullOrEmpty(sortBy))
+                {
+                    OrdenarPorColumna(sortBy);
+                }
             }
         }
 
-
         private void OrdenarPorColumna(string sortBy)
         {
-            if (facturasListView.ItemsSource is List<FacturaViewModel> items)
+            if (facturasListView.ItemsSource is List<Factura> items)
             {
                 var sortedItems = items.OrderBy(item =>
                 {
-                    var property = typeof(FacturaViewModel).GetProperty(sortBy);
+                    var property = typeof(Factura).GetProperty(sortBy);
                     return property != null ? property.GetValue(item)?.ToString() : string.Empty;
                 }).ToList();
 
                 facturasListView.ItemsSource = sortedItems;
             }
         }
+
 
 
 
