@@ -5,14 +5,13 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 
 namespace ModuloConsultasGiGas.Model
 {
     public class FacturaViewModel : INotifyPropertyChanged
     {
-
-
         public ICommand ExportPdfCommand { get; private set; }
         public ICommand ExportXmlCommand { get; private set; }
         public ICommand SendEmailCommand { get; private set; }
@@ -26,17 +25,20 @@ namespace ModuloConsultasGiGas.Model
 
         private void ExportPdf(Factura factura)
         {
-            // Implementa la lógica para exportar a PDF
+            // Mensaje de prueba para el botón PDF
+            MessageBox.Show("Botón PDF presionado para la factura: " + factura.FacturaId);
         }
 
         private void ExportXml(Factura factura)
         {
-            // Implementa la lógica para exportar a XML
+            // Mensaje de prueba para el botón XML
+            MessageBox.Show("Botón XML presionado para la factura: " + factura.FacturaId);
         }
 
         private void SendEmail(Factura factura)
         {
-            // Implementa la lógica para enviar por email
+            // Mensaje de prueba para el botón ENVIO
+            MessageBox.Show("Botón ENVIO presionado para la factura: " + factura.FacturaId);
         }
 
         // Implementa INotifyPropertyChanged

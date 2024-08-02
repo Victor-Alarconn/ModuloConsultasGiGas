@@ -104,7 +104,7 @@
             <ListView Name="facturasListView" HorizontalAlignment="Left" Height="222" VerticalAlignment="Center" Width="1310" SelectionChanged="facturasListView_SelectionChanged" Margin="19,0,0,0">
                 <ListView.View>
                     <GridView x:Name="facturasGridView">
-                        <!-- Las columnas se agregarán en el código detrás -->
+                       
                     </GridView>
                 </ListView.View>
             </ListView>

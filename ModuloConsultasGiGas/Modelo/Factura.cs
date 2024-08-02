@@ -21,7 +21,7 @@ namespace ModuloConsultasGiGas.Modelo
         public string Encabezado_NC { get; set; }
         public string Articulos { get; set; }
         public string Metodo { get; set; }
-        // Agrega otras propiedades según sea necesario
+       
 
 
     }

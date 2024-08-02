@@ -35,6 +35,7 @@ namespace ModuloConsultasGiGas
             InitializeComponent();
             ConsultarDatos("empresas");
             ConfigurarColumnas();
+            this.DataContext = new FacturaViewModel();
         }
 
         private void ConsultarDatos(string databaseName)
@@ -192,19 +193,10 @@ namespace ModuloConsultasGiGas
                 CargarFacturasEnMemoria();
             }
 
-            // Mensaje de depuración para ver qué tablas están cargadas
-            Console.WriteLine("Tablas cargadas:");
-            foreach (var tabla in facturasEnMemoria.Keys)
-            {
-                Console.WriteLine(tabla);
-            }
-
-            // Buscar en la tabla 'fac' primero
             if (facturasEnMemoria.ContainsKey("fac"))
             {
                 List<Dictionary<string, object>> resultadosFac;
 
-                // Si searchText está vacío, muestra todas las facturas
                 if (string.IsNullOrEmpty(searchText))
                 {
                     resultadosFac = facturasEnMemoria["fac"];
@@ -214,51 +206,43 @@ namespace ModuloConsultasGiGas
                     resultadosFac = facturasEnMemoria["fac"].Where(f => f.ContainsKey("factura") && f["factura"].ToString().Contains(searchText, StringComparison.OrdinalIgnoreCase)).ToList();
                 }
 
-                // Mensaje de depuración para ver el número de resultados encontrados
-                Console.WriteLine("Resultados encontrados en 'fac': " + resultadosFac.Count);
-
                 if (resultadosFac.Count > 0)
                 {
-                    var resultadosCompletos = new List<Dictionary<string, object>>();
+                    var resultadosCompletos = new List<Factura>();
 
                     foreach (var fac in resultadosFac)
                     {
-                        var resultado = new Dictionary<string, object>(fac);
+                        var factura = new Factura
+                        {
+                            FacturaId = fac.ContainsKey("factura") ? fac["factura"].ToString() : "",
+                            Recibo = fac.ContainsKey("recibo") ? fac["recibo"].ToString() : "",
+                            Cliente = fac.ContainsKey("nombre3") ? fac["nombre3"].ToString() : "",
+                            Estado = fac.ContainsKey("estado") ? fac["estado"].ToString() : "",
+                            Error = fac.ContainsKey("msm_error") ? fac["msm_error"].ToString() : "",
+                            Memo = fac.ContainsKey("dato_qr") ? fac["dato_qr"].ToString() : ""
+                        };
 
-                        // Determinar si es una factura o una devolución
+                        // Determinar si es una devolución
                         bool esDevolucion = fac.ContainsKey("recibo") && !string.IsNullOrEmpty(fac["recibo"]?.ToString());
 
                         if (esDevolucion)
                         {
-                            resultado["Fecha"] = BuscarEnTabla("xxxxcmbt", "ffinal", fac["recibo"], "recibo");
-                            resultado["Encabezado_nc"] = ContarEnTabla("xxxxcmbt", "recibo", fac["factura"]);
+                            factura.Fecha = BuscarEnTabla("xxxxcmbt", "ffinal", fac["recibo"], "recibo")?.ToString() ?? "";
+                            factura.Encabezado_NC = ContarEnTabla("xxxxcmbt", "recibo", fac["factura"]).ToString();
                         }
                         else
                         {
-                            resultado["Fecha"] = BuscarEnTabla("xxxxccfc", "fecha", fac["factura"], "factura");
-                            resultado["Encabezado"] = ContarEnTabla("xxxxccfc", "factura", fac["factura"]);
+                            factura.Fecha = BuscarEnTabla("xxxxccfc", "fecha", fac["factura"], "factura")?.ToString() ?? "";
+                            factura.Encabezado = ContarEnTabla("xxxxccfc", "factura", fac["factura"]).ToString(); 
                         }
 
-                        resultado["Articulos"] = ContarArticulosEnTabla("xxxxmvin", fac["factura"], "");
-                        resultado["Metodo"] = ContarEnTabla("xxxxccpg", "factura", fac["factura"]);
+                        factura.Articulos = ContarArticulosEnTabla("xxxxmvin", fac["factura"], "").ToString();
+                        factura.Metodo = ContarEnTabla("xxxxccpg", "factura", fac["factura"]).ToString();
 
-                        resultadosCompletos.Add(resultado);
+                        resultadosCompletos.Add(factura);
                     }
 
-                    facturasListView.ItemsSource = resultadosCompletos.Select(r => new
-                    {
-                        Factura = r.ContainsKey("factura") ? r["factura"] : "",
-                        Recibo = r.ContainsKey("recibo") ? r["recibo"] : "",
-                        Cliente = r.ContainsKey("nombre3") ? r["nombre3"] : "",
-                        Estado = r.ContainsKey("estado") ? r["estado"] : "",
-                        Error = r.ContainsKey("msm_error") ? r["msm_error"] : "",
-                        Memo = r.ContainsKey("dato_qr") ? r["dato_qr"] : "",
-                        Fecha = r.ContainsKey("Fecha") ? r["Fecha"] : "",
-                        Encabezado = r.ContainsKey("Encabezado") ? r["Encabezado"] : "",
-                        Encabezado_NC = r.ContainsKey("Encabezado_nc") ? r["Encabezado_nc"] : "",
-                        Articulos = r.ContainsKey("Articulos") ? r["Articulos"] : "",
-                        Metodo = r.ContainsKey("Metodo") ? r["Metodo"] : ""
-                    }).ToList();
+                    facturasListView.ItemsSource = resultadosCompletos;
                 }
                 else
                 {
@@ -270,6 +254,8 @@ namespace ModuloConsultasGiGas
                 MessageBox.Show("La tabla 'fac' no está cargada.");
             }
         }
+
+
 
         private object BuscarEnTabla(string tabla, string columna, object valor, string nombre)
         {
@@ -313,7 +299,7 @@ namespace ModuloConsultasGiGas
 
         private void ConfigurarColumnas()
         {
-            AgregarColumna("Factura", "Factura");
+            AgregarColumna("Factura", "FacturaId");
             AgregarColumna("Recibo", "Recibo");
             AgregarColumna("Cliente", "Cliente");
             AgregarColumna("Estado", "Estado");
@@ -324,8 +310,7 @@ namespace ModuloConsultasGiGas
             AgregarColumna("Encabezado_NC", "Encabezado_NC");
             AgregarColumna("Articulos", "Articulos");
             AgregarColumna("Metodos Pago", "Metodo");
-            AgregarColumnaAcciones(); // Agrega la columna de acciones
-                                      // Agregar más columnas si es necesario
+            AgregarColumnaAcciones(); 
         }
 
         private void AgregarColumna(string header, string bindingPath)
