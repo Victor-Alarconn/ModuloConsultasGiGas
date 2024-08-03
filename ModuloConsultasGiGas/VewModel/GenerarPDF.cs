@@ -119,7 +119,7 @@ namespace ModuloConsultasGiGas.VewModel
                 }
                 else
                 {
-                    factura1 = "Nro. Doc: " + factura.Facturas;
+                    factura1 = "Nro. Doc: " + factura.FacturaId;
                 }
 
                 // Crear tabla para los datos del emisor
@@ -197,7 +197,7 @@ namespace ModuloConsultasGiGas.VewModel
                 }
                 else
                 {
-                    TextoQR = $"NumFac:{factura.Facturas} \n" +
+                    TextoQR = $"NumFac:{factura.FacturaId} \n" +
                               $"FecFac:{fechaFac}\n" +
                               $"HorFac:{horaformateada}  \n" +
                               $"NitFac:{NitFact}\n" +

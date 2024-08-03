@@ -1,4 +1,5 @@
-﻿using ModuloConsultasGiGas.Modelo;
+﻿using Microsoft.Win32;
+using ModuloConsultasGiGas.Modelo;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -25,9 +26,39 @@ namespace ModuloConsultasGiGas.Model
 
         private void ExportPdf(Factura factura)
         {
-            // Mensaje de prueba para el botón PDF
-            MessageBox.Show("Botón PDF presionado para la factura: " + factura.FacturaId);
+            // Crear y configurar el SaveFileDialog
+            SaveFileDialog saveFileDialog = new SaveFileDialog();
+            saveFileDialog.Filter = "PDF Files (*.pdf)|*.pdf";
+            saveFileDialog.Title = "Guardar archivo PDF";
+            saveFileDialog.FileName = "Factura_" + factura.FacturaId + ".pdf";
+
+            // Mostrar el diálogo al usuario
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                string rutaArchivo = saveFileDialog.FileName;
+
+                // Aquí puedes definir los parámetros que necesitas para crear el PDF
+                Emisor emisor = ObtenerEmisor(); // Método para obtener el emisor
+                List<Productos> listaProductos = ObtenerProductos(factura.FacturaId); // Método para obtener la lista de productos
+                string cufe = ObtenerCufe(factura.FacturaId); // Método para obtener el CUFE
+                Adquiriente adquiriente = ObtenerAdquiriente(factura.FacturaId); // Método para obtener el adquiriente
+                Movimiento movimiento = ObtenerMovimiento(factura.FacturaId); // Método para obtener el movimiento
+                Encabezado encabezado1 = ObtenerEncabezado(factura.FacturaId); // Método para obtener el encabezado
+                List<FormaPago> listaFormaPago = ObtenerFormasPago(factura.FacturaId); // Método para obtener las formas de pago
+
+                // Llamar al método CrearPDF de la clase GenerarPDF
+                ModuloConsultasGiGas.VewModel.GenerarPDF.CrearPDF(rutaArchivo, emisor, factura, listaProductos, cufe, adquiriente, movimiento, encabezado1, listaFormaPago);
+
+                // Mensaje de prueba para el botón PDF
+                MessageBox.Show("El PDF ha sido guardado en: " + rutaArchivo);
+            }
+            else
+            {
+                // El usuario canceló la operación
+                MessageBox.Show("Guardado cancelado.");
+            }
         }
+
 
         private void ExportXml(Factura factura)
         {
