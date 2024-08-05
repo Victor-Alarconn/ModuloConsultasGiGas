@@ -28,14 +28,16 @@ namespace ModuloConsultasGiGas
     {
         private string tempFilePath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "empresas_temp.json");
         private string codigoEmpresaSeleccionada;
-        private List<Empresa> listaEmpresas = new List<Empresa>();
+        private List<Emisor> listaEmpresas = new List<Emisor>();
         private static Window resolucionesWindow;
+        private FacturaViewModel facturaViewModel;
         public Consulta()
         {
             InitializeComponent();
             ConsultarDatos("empresas");
             ConfigurarColumnas();
-            this.DataContext = new FacturaViewModel();
+            facturaViewModel = new FacturaViewModel(tempFilePath);
+            this.DataContext = facturaViewModel;
         }
 
         private void ConsultarDatos(string databaseName)
@@ -45,22 +47,39 @@ namespace ModuloConsultasGiGas
                 ModuloConsultasGiGas.Data.Conexion conexionBD = new ModuloConsultasGiGas.Data.Conexion(databaseName);
                 using (MySqlConnection conexion = conexionBD.ObtenerConexion())
                 {
-                    string query = "SELECT emprobra, emprnombr, emprnit, emprdirec, emprciuda, emprtelef, empremail, empr_urlx FROM empresas";
+                    string query = "SELECT emprobra, emprnombr, emprnit, emprtipo, emprdirec, emprciuda, empregim_x, emprperson, empremail, emprtelef, empretiene, empr_urlx, emprcity, emprepres, evtaica, logo, emprperson FROM empresas";
                     MySqlCommand comando = new MySqlCommand(query, conexion);
                     MySqlDataReader reader = comando.ExecuteReader();
 
                     while (reader.Read())
                     {
-                        Empresa empresa = new Empresa
+                        string Logo_emisor = string.Empty;
+                        if (reader["logo"] != DBNull.Value)
+                        {
+                            byte[] logoBytes = (byte[])reader["logo"];
+                            Logo_emisor = Convert.ToBase64String(logoBytes);
+                        }
+                        Emisor empresa = new Emisor
                         {
                             Emprobra = reader["emprobra"]?.ToString() ?? string.Empty,
-                            Emprnombr = reader["emprnombr"]?.ToString() ?? string.Empty,
-                            Emprnit = reader["emprnit"]?.ToString() ?? string.Empty,
-                            Emprdirec = reader["emprdirec"]?.ToString() ?? string.Empty,
-                            Emprciuda = reader["emprciuda"]?.ToString() ?? string.Empty,
-                            Emprtelef = reader["emprtelef"]?.ToString() ?? string.Empty,
-                            Empremail = reader["empremail"]?.ToString() ?? string.Empty,
-                            EmprUrlx = reader["empr_urlx"]?.ToString() ?? string.Empty
+                            Nombre_emisor = reader["emprnombr"]?.ToString() ?? string.Empty,
+                            Nit_emisor = reader["emprnit"]?.ToString() ?? string.Empty,
+                            Codigo_departamento_emisor = reader["emprtipo"]?.ToString() ?? string.Empty,
+                            Direccion_emisor = reader["emprdirec"]?.ToString() ?? string.Empty,
+                            Nombre_municipio_emisor = reader["emprciuda"]?.ToString() ?? string.Empty,
+                            Responsable_emisor = reader["empregim_x"]?.ToString() ?? string.Empty,
+                            Tipo_emisor = Convert.ToDecimal(reader["emprperson"]?.ToString() ?? "0"),
+                            Correo_emisor = reader["empremail"]?.ToString() ?? string.Empty,
+                            Telefono_emisor = reader["emprtelef"]?.ToString() ?? string.Empty,
+                            Retiene_emisor = Convert.ToDecimal(reader["empretiene"]?.ToString() ?? "0"),
+                            Url_emisor = reader["empr_urlx"]?.ToString() ?? string.Empty,
+                            Ciudad_emisor = reader["emprcity"]?.ToString() ?? string.Empty,
+                            Representante = reader["emprepres"]?.ToString() ?? string.Empty,
+                            Ica = reader["evtaica"]?.ToString() ?? string.Empty,
+                            Logo_emisor = Logo_emisor,
+                            Regimen_emisor = Convert.ToDecimal(reader["emprperson"] ?? 0) == 1 ? "Natural" :
+                                             Convert.ToDecimal(reader["emprperson"] ?? 0) == 2 ? "Jurídica" : ""
+
                         };
                         listaEmpresas.Add(empresa);
                     }
@@ -74,7 +93,7 @@ namespace ModuloConsultasGiGas
             }
         }
 
-        private void GuardarDatosEnArchivoTemp(List<Empresa> listaEmpresas)
+        private void GuardarDatosEnArchivoTemp(List<Emisor> listaEmpresas)
         {
             try
             {
@@ -116,14 +135,14 @@ namespace ModuloConsultasGiGas
 
             // Realiza la búsqueda de las empresas
             string searchText = searchTextBox.Text.ToLower();
-            var filteredEmpresas = listaEmpresas.Where(empresa =>
-                (empresa.Emprobra?.ToLower().Contains(searchText) ?? false) ||
-                (empresa.Emprnombr?.ToLower().Contains(searchText) ?? false)).ToList();
+            var filteredEmpresas = listaEmpresas.Where(Emisor =>
+                (Emisor.Emprobra?.ToLower().Contains(searchText) ?? false) ||
+                (Emisor.Nombre_emisor?.ToLower().Contains(searchText) ?? false)).ToList();
 
             // Actualiza la lista de resultados con el formato "Código - Nombre"
             if (filteredEmpresas.Any())
             {
-                var formattedEmpresas = filteredEmpresas.Select(empresa => $"{empresa.Emprobra} - {empresa.Emprnombr}").ToList();
+                var formattedEmpresas = filteredEmpresas.Select(empresa => $"{empresa.Emprobra} - {empresa.Nombre_emisor}").ToList();
                 resultsListBox.ItemsSource = formattedEmpresas;
                 resultsListBox.Visibility = Visibility.Visible;
             }
@@ -146,14 +165,14 @@ namespace ModuloConsultasGiGas
                 {
                     // Actualiza los TextBox con los datos de la empresa seleccionada
                     codigoTextBox.Text = selectedEmpresa.Emprobra;
-                    nombreTextBox.Text = selectedEmpresa.Emprnombr;
-                    nitTextBox.Text = selectedEmpresa.Emprnit;
-                    direccionTextBox.Text = selectedEmpresa.Emprdirec;
-                    telefonoTextBox.Text = selectedEmpresa.Emprtelef;
-                    ciudadTextBox.Text = selectedEmpresa.Emprciuda;
-                    palabraTextBox.Text = selectedEmpresa.EmprUrlx;
+                    nombreTextBox.Text = selectedEmpresa.Nombre_emisor;
+                    nitTextBox.Text = selectedEmpresa.Nit_emisor;
+                    direccionTextBox.Text = selectedEmpresa.Direccion_emisor;
+                    telefonoTextBox.Text = selectedEmpresa.Telefono_emisor;
+                    ciudadTextBox.Text = selectedEmpresa.Ciudad_emisor;
+                    palabraTextBox.Text = selectedEmpresa.Url_emisor;
                     // Actualiza el TextBox de búsqueda con el nombre de la empresa seleccionada
-                    searchTextBox.Text = $"{selectedEmpresa.Emprobra} - {selectedEmpresa.Emprnombr}";
+                    searchTextBox.Text = $"{selectedEmpresa.Emprobra} - {selectedEmpresa.Nombre_emisor}";
 
                     // Oculta el ListBox
                     resultsListBox.Visibility = Visibility.Collapsed;
@@ -162,6 +181,7 @@ namespace ModuloConsultasGiGas
                     consultas.ConsultarDatosFacturas(selectedEmpresa.Emprobra);
 
                     codigoEmpresaSeleccionada = selectedEmpresa.Emprobra;
+                    facturaViewModel.CodigoEmpresaSeleccionada = selectedEmpresa.Emprobra;
 
                     // Carga las facturas en memoria
                     CargarFacturasEnMemoria();

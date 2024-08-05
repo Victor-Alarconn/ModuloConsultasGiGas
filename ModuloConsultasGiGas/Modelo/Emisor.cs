@@ -8,6 +8,7 @@ namespace ModuloConsultasGiGas.Modelo
 {
     public class Emisor
     {
+        public string? Emprobra { get; set; } // Solo se agrego aqui
         public string? Nombre_emisor { get; set; }
         public string? Codigo_FormaPago_emisor { get; set; }
         public string? cude { get; set; }
