@@ -52,11 +52,11 @@ namespace ModuloConsultasGiGas.Model
                 // Obtener todos los datos necesarios para la generación del PDF
                 Emisor emisor = ObtenerEmisor(); // Método para obtener el emisor
                 List<Productos> listaProductos = ObtenerProductos(factura.FacturaId, factura.Recibo); // Método para obtener la lista de productos
-                string cufe = ObtenerCufe(factura.FacturaId); // Método para obtener el CUFE
                 Adquiriente adquiriente = ObtenerAdquiriente(factura.FacturaId); // Método para obtener el adquiriente
                 Movimiento movimiento = ObtenerMovimiento(factura.FacturaId); // Método para obtener el movimiento
                 Encabezado encabezado1 = ObtenerEncabezado(factura.FacturaId); // Método para obtener el encabezado
                 List<FormaPago> listaFormaPago = ObtenerFormasPago(factura.FacturaId); // Método para obtener las formas de pago
+                string cufe = ObtenerCufe(factura.FacturaId); // Método para obtener el CUFE
 
                 // Verifica que todos los datos sean válidos antes de proceder
                 if (emisor == null || listaProductos == null || cufe == null || adquiriente == null ||
@@ -193,18 +193,19 @@ namespace ModuloConsultasGiGas.Model
                     string json = File.ReadAllText(tempFilePathFacturas);
                     var facturasEnMemoria = JsonConvert.DeserializeObject<Dictionary<string, List<Dictionary<string, object>>>>(json);
 
-                    // Verifica si la facturaId existe en el archivo
-                    if (facturasEnMemoria != null && facturasEnMemoria.ContainsKey(facturaId))
+                    // Verifica si la tabla xxxxMvin existe en el archivo
+                    if (facturasEnMemoria != null && facturasEnMemoria.ContainsKey("xxxxmvin"))
                     {
-                        var productosTemp = facturasEnMemoria[facturaId];
+                        var productosTemp = facturasEnMemoria["xxxxmvin"];
 
-                        // Filtra los productos según el recibo
+                        // Filtra los productos según la facturaId y el recibo
                         foreach (var productoDict in productosTemp)
                         {
                             // Convierte el diccionario a un objeto Producto
                             var producto = JsonConvert.DeserializeObject<Productos>(JsonConvert.SerializeObject(productoDict));
 
-                            if (recibo == null || string.IsNullOrEmpty(recibo) || producto.Recibo == recibo)
+                            // Verifica si la factura coincide y aplica el filtro de recibo si es necesario
+                            if (producto.Factura == facturaId && (string.IsNullOrEmpty(recibo) || producto.Recibo == recibo))
                             {
                                 productos.Add(producto);
                             }
@@ -212,7 +213,7 @@ namespace ModuloConsultasGiGas.Model
                     }
                     else
                     {
-                        MessageBox.Show("No se encontraron productos para la factura especificada.");
+                        MessageBox.Show("No se encontraron productos en la tabla 'xxxxmvin'.");
                     }
                 }
                 else
@@ -227,6 +228,9 @@ namespace ModuloConsultasGiGas.Model
 
             return productos;
         }
+
+
+
 
 
         private string ObtenerCufe(string facturaId)
@@ -247,23 +251,81 @@ namespace ModuloConsultasGiGas.Model
 
         private Adquiriente ObtenerAdquiriente(string facturaId)
         {
-            // Aquí va la lógica para obtener el Adquiriente.
-            // Por ejemplo, si la información del adquiriente está en la tabla "xxxxccfc".
-            var tabla = "xxxxccfc";
-            if (resultadosPorTabla.ContainsKey(tabla))
+            var adquiriente = new Adquiriente();
+
+            try
             {
-                var datosAdquiriente = resultadosPorTabla[tabla].FirstOrDefault(f => f.ContainsKey("factura") && f["factura"].ToString() == facturaId);
-                if (datosAdquiriente != null)
+                // Lee el archivo temporal de facturas
+                string tempFilePathFacturas = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "facturas_temp.json");
+                if (File.Exists(tempFilePathFacturas))
                 {
-                    return new Adquiriente
+                    // Lee el contenido del archivo JSON
+                    string json = File.ReadAllText(tempFilePathFacturas);
+                    var facturasEnMemoria = JsonConvert.DeserializeObject<Dictionary<string, List<Dictionary<string, object>>>>(json);
+
+                    // Verifica si la tabla 'xxxxmvin' y 'xxxx3ros' existen en el archivo
+                    if (facturasEnMemoria != null && facturasEnMemoria.ContainsKey("xxxxmvin") && facturasEnMemoria.ContainsKey("xxxx3ros"))
                     {
-                        // Asigna las propiedades del Adquiriente usando datosAdquiriente
-                        // Ejemplo: Nombre = datosAdquiriente["nombre"].ToString()
-                    };
+                        var productosTemp = facturasEnMemoria["xxxxmvin"];
+                        var adquirientesTemp = facturasEnMemoria["xxxx3ros"];
+
+                        // Obtiene el nit del primer producto en la tabla 'xxxxmvin'
+                        var primerProducto = productosTemp.FirstOrDefault(p => p.ContainsKey("factura") && p["factura"].ToString() == facturaId);
+                        if (primerProducto != null && primerProducto.ContainsKey("nit"))
+                        {
+                            string nit = primerProducto["nit"].ToString();
+
+                            // Busca los datos del adquiriente en la tabla 'xxxx3ros' usando el nit
+                            var datosAdquiriente = adquirientesTemp.FirstOrDefault(a => a.ContainsKey("tronit") && a["tronit"].ToString() == nit);
+                            if (datosAdquiriente != null)
+                            {
+                                // Concatena el nombre completo del adquiriente
+                                string nombreCompleto = $"{datosAdquiriente["tronombre"]} {datosAdquiriente["tronomb_2"]} {datosAdquiriente["troapel_1"]} {datosAdquiriente["troapel_2"]}".Trim();
+
+                                adquiriente = new Adquiriente
+                                {
+                                    Nombre_adqu = nombreCompleto,
+                                    Nombre2 = datosAdquiriente.ContainsKey("tronombre2") ? datosAdquiriente["tronombre2"].ToString() : null,
+                                    Apellido = datosAdquiriente.ContainsKey("troapel_1") ? datosAdquiriente["troapel_1"].ToString() : null,
+                                    Apellido2 = datosAdquiriente.ContainsKey("troapel_2") ? datosAdquiriente["troapel_2"].ToString() : null,
+                                    Codigo_municipio_adqui = datosAdquiriente.ContainsKey("trocciu") ? datosAdquiriente["trocciu"].ToString() : null,
+                                    Nombre_municipio_adqui = datosAdquiriente.ContainsKey("trociudad") ? datosAdquiriente["trociudad"].ToString() : null,
+                                    Codigo_departamento_adqui = datosAdquiriente.ContainsKey("trodato_cp") ? datosAdquiriente["trodato_cp"].ToString() : null,
+                                    Nombre_departamento_adqui = datosAdquiriente.ContainsKey("trodato_cc") ? datosAdquiriente["trodato_cc"].ToString() : null,
+                                    Direccion_adqui = datosAdquiriente.ContainsKey("trodirec") ? datosAdquiriente["trodirec"].ToString() : null,
+                                    Codigo_postal_adqui = datosAdquiriente.ContainsKey("trocity") ? datosAdquiriente["trocity"].ToString() : null,
+                                    Nit_adqui = datosAdquiriente.ContainsKey("tronit") ? datosAdquiriente["tronit"].ToString() : null,
+                                    Dv_Adqui = datosAdquiriente.ContainsKey("trodigito") ? datosAdquiriente["trodigito"].ToString() : null,
+                                    Responsable = datosAdquiriente.ContainsKey("troactivo") ? Convert.ToDecimal(datosAdquiriente["troactivo"]) : 0,
+                                    Correo_adqui = datosAdquiriente.ContainsKey("troemail") ? datosAdquiriente["troemail"].ToString() : null,
+                                    Tipo_p = datosAdquiriente.ContainsKey("trotp_3ro") ? Convert.ToDecimal(datosAdquiriente["trotp_3ro"]) : 0,
+                                    Telefono_adqui = datosAdquiriente.ContainsKey("trocelular") ? datosAdquiriente["trocelular"].ToString() : null,
+                                    Tipo_doc = datosAdquiriente.ContainsKey("trotipo") ? datosAdquiriente["trotipo"].ToString() : null,
+                                    Correo2 = datosAdquiriente.ContainsKey("troemail") ? datosAdquiriente["troemail"].ToString() : null
+                                };
+                            }
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("No se encontraron datos en las tablas 'xxxxmvin' o 'xxxx3ros'.");
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("El archivo temporal de facturas no existe.");
                 }
             }
-            return null;
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al obtener el adquiriente: " + ex.Message);
+            }
+
+            return adquiriente;
         }
+
+
+
 
         private Movimiento ObtenerMovimiento(string facturaId)
         {

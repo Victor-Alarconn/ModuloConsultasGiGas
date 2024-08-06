@@ -8,6 +8,7 @@ namespace ModuloConsultasGiGas.Modelo
 {
     public class Productos
     {
+        public string? Factura { get; set; } // Solo Aqui
         public string? Codigo { get; set; }
         public string? Recibo { get; set; }
         public string? Nit { get; set; }
