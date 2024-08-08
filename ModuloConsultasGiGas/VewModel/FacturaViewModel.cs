@@ -1,11 +1,15 @@
 ﻿using Microsoft.Win32;
+using ModuloConsultasGiGas.Data;
 using ModuloConsultasGiGas.Modelo;
+using ModuloConsultasGiGas.VewModel;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -49,6 +53,13 @@ namespace ModuloConsultasGiGas.Model
         {
             try
             {
+                // Verificar si el estado de la factura es diferente de 4
+                if (factura.Estado != "4")
+                {
+                    MessageBox.Show("La factura no está en un estado válido para exportar el PDF.");
+                    return;
+                }
+
                 // Obtener todos los datos necesarios para la generación del PDF
                 Emisor emisor = ObtenerEmisor(); // Método para obtener el emisor
                 List<Productos> listaProductos = ObtenerProductos(factura.FacturaId, factura.Recibo); // Método para obtener la lista de productos
@@ -100,17 +111,177 @@ namespace ModuloConsultasGiGas.Model
 
 
 
+
         private void ExportXml(Factura factura)
         {
             // Mensaje de prueba para el botón XML
             MessageBox.Show("Botón XML presionado para la factura: " + factura.FacturaId);
         }
 
-        private void SendEmail(Factura factura)
+        private async void SendEmail(Factura factura)
         {
-            // Mensaje de prueba para el botón ENVIO
-            MessageBox.Show("Botón ENVIO presionado para la factura: " + factura.FacturaId);
+            try
+            {
+                // Crear un cuadro de entrada para que el usuario ingrese la dirección de correo
+                string emailAddress = Microsoft.VisualBasic.Interaction.InputBox(
+                    "Por favor, ingrese la dirección de correo electrónico a la que desea enviar la factura:",
+                    "Enviar Correo Electrónico",
+                    "",
+                    -1, -1);
+
+                // Verificar si la dirección de correo electrónico ingresada no está vacía
+                if (string.IsNullOrEmpty(emailAddress))
+                {
+                    MessageBox.Show("No se proporcionó ninguna dirección de correo electrónico.");
+                    return;
+                }
+
+                Emisor emisor = ObtenerEmisor(); // Método para obtener el emisor
+                List<Productos> listaProductos = ObtenerProductos(factura.FacturaId, factura.Recibo); // Método para obtener la lista de productos
+                Adquiriente adquiriente = ObtenerAdquiriente(factura.FacturaId); // Método para obtener el adquiriente
+                Movimiento movimiento = ObtenerMovimiento(factura.FacturaId); // Método para obtener el movimiento
+                Encabezado encabezado1 = ObtenerEncabezado(factura.FacturaId, factura.Terminal); // Método para obtener el encabezado
+                List<FormaPago> listaFormaPago = ObtenerFormasPago(factura.FacturaId); // Método para obtener las formas de pago
+                string cufe = ObtenerCufe(factura.FacturaId); // Método para obtener el CUFE
+
+                // Configuración del correo electrónico
+                string nitCompleto = emisor.Nit_emisor ?? "";
+                string[] partesNit = nitCompleto.Split('-');
+                string Nit = partesNit.Length > 0 ? partesNit[0] : "";
+                string partnershipId = "900770401";
+                string nitEmisor = Nit;
+                string idDocumento;
+                string codigoTipoDocumento;
+                string PrefijoNC = "";
+                string recibo = "";
+                bool Nota_credito;
+                string url = "https://apivp.efacturacadena.com/v1/vp/consulta/documentos";
+                string token = "RtFGzoqD-5dab-BVQl-qHaQ-ICPjsQnP4Q1K";
+
+                if (!string.IsNullOrEmpty(factura.Recibo) && factura.Recibo != "0" && factura.Tipo_movimiento == "NC")
+                {
+                    PrefijoNC = "NC" + factura.Recibo;
+                    idDocumento = PrefijoNC;
+                    codigoTipoDocumento = "91";
+                    recibo = factura.Recibo;
+                    Nota_credito = true;
+                }
+                else if (!string.IsNullOrEmpty(factura.Recibo) && factura.Recibo != "0" && factura.Tipo_movimiento == "ND")
+                {
+                    PrefijoNC = "ND" + factura.Recibo;
+                    idDocumento = PrefijoNC;
+                    codigoTipoDocumento = "92";
+                    recibo = factura.Recibo;
+                    Nota_credito = true;
+                }
+                else
+                {
+                    idDocumento = factura.FacturaId;
+                    recibo = factura.FacturaId;
+                    codigoTipoDocumento = "01";
+                    Nota_credito = false;
+                }
+
+                string parametros = $"?nit_emisor={nitEmisor}&id_documento={idDocumento}&codigo_tipo_documento={codigoTipoDocumento}";
+                url += parametros;
+
+                using (HttpClient client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Add("Partnership-Id", partnershipId);
+                    client.DefaultRequestHeaders.Add("efacturaAuthorizationToken", token);
+
+                    HttpResponseMessage response = await client.GetAsync(url);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string jsonResponse = await response.Content.ReadAsStringAsync();
+                        dynamic jsonResponseObject = JsonConvert.DeserializeObject(jsonResponse);
+                        string documentBase64 = jsonResponseObject.document;
+                        byte[] xmlBytes = Convert.FromBase64String(documentBase64);
+
+                        using (MemoryStream xmlStream = new MemoryStream(xmlBytes))
+                        {
+                            int añoActual = DateTime.Now.Year;
+                            string nombreArchivoPDF;
+                            if (!string.IsNullOrEmpty(factura.Recibo) && factura.Recibo != "0" && factura.Tipo_movimiento == "NC")
+                            {
+                                nombreArchivoPDF = $"nc{nitEmisor.TrimStart('0')}{añoActual.ToString().Substring(2)}000{PrefijoNC:D8}.pdf";
+                            }
+                            else if (!string.IsNullOrEmpty(factura.Recibo) && factura.Recibo != "0" && factura.Tipo_movimiento == "ND")
+                            {
+                                nombreArchivoPDF = $"nd{nitEmisor.TrimStart('0')}{añoActual.ToString().Substring(2)}000{PrefijoNC:D8}.pdf";
+                            }
+                            else
+                            {
+                                nombreArchivoPDF = $"fv{nitEmisor.TrimStart('0')}{añoActual.ToString().Substring(2)}000{factura.FacturaId:D8}.pdf";
+                            }
+
+                            string nombreArchivoXML;
+                            if (!string.IsNullOrEmpty(factura.Recibo) && factura.Recibo != "0" && factura.Tipo_movimiento == "NC")
+                            {
+                                nombreArchivoXML = $"ad{nitEmisor.TrimStart('0')}{añoActual.ToString().Substring(2)}000{PrefijoNC:D8}.xml";
+                            }
+                            else if (!string.IsNullOrEmpty(factura.Recibo) && factura.Recibo != "0" && factura.Tipo_movimiento == "ND")
+                            {
+                                nombreArchivoXML = $"ad{nitEmisor.TrimStart('0')}{añoActual.ToString().Substring(2)}000{PrefijoNC:D8}.xml";
+                            }
+                            else
+                            {
+                                nombreArchivoXML = $"ad{nitEmisor.TrimStart('0')}{añoActual.ToString().Substring(2)}000{factura.FacturaId:D8}.xml";
+                            }
+
+                            string directorioProyecto = Directory.GetCurrentDirectory();
+                            string rutaArchivoPDF = Path.Combine(directorioProyecto, nombreArchivoPDF);
+
+                            // Eliminar archivo si ya existe
+                            if (File.Exists(rutaArchivoPDF))
+                            {
+                                File.Delete(rutaArchivoPDF);
+                            }
+
+                            ModuloConsultasGiGas.VewModel.GenerarPDF.CrearPDF(rutaArchivoPDF, emisor, factura, listaProductos, cufe, adquiriente, movimiento, encabezado1, listaFormaPago);
+
+                            using (MemoryStream zipStream = new MemoryStream())
+                            {
+                                using (ZipArchive zip = new ZipArchive(zipStream, ZipArchiveMode.Update, true))
+                                {
+                                    zip.CreateEntryFromFile(rutaArchivoPDF, nombreArchivoPDF);
+
+                                    var entry = zip.CreateEntry(nombreArchivoXML, CompressionLevel.Fastest);
+                                    using (Stream entryStream = entry.Open())
+                                    {
+                                        xmlStream.Seek(0, SeekOrigin.Begin);
+                                        await xmlStream.CopyToAsync(entryStream);
+                                    }
+                                }
+
+                                bool correoEnviado = false;
+
+                                if (adquiriente.Nit_adqui != "222222222222")
+                                {
+                                    correoEnviado = await ModuloConsultasGiGas.VewModel.EnviarCorreo.Enviar(emisor, adquiriente, factura, zipStream.ToArray(), emailAddress);
+                                }
+                                else
+                                {
+                                    correoEnviado = true;
+                                }
+
+                                if (correoEnviado)
+                                {
+                                   MessageBox.Show("El correo electrónico ha sido enviado correctamente.");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Manejar cualquier excepción que ocurra durante el envío del correo
+                MessageBox.Show("Ocurrió un error al enviar el correo: " + ex.Message);
+            }
         }
+
 
         // Implementa INotifyPropertyChanged
         public event PropertyChangedEventHandler PropertyChanged;
