@@ -54,7 +54,7 @@ namespace ModuloConsultasGiGas.Model
                 List<Productos> listaProductos = ObtenerProductos(factura.FacturaId, factura.Recibo); // Método para obtener la lista de productos
                 Adquiriente adquiriente = ObtenerAdquiriente(factura.FacturaId); // Método para obtener el adquiriente
                 Movimiento movimiento = ObtenerMovimiento(factura.FacturaId); // Método para obtener el movimiento
-                Encabezado encabezado1 = ObtenerEncabezado(factura.FacturaId); // Método para obtener el encabezado
+                Encabezado encabezado1 = ObtenerEncabezado(factura.FacturaId, factura.Terminal); // Método para obtener el encabezado
                 List<FormaPago> listaFormaPago = ObtenerFormasPago(factura.FacturaId); // Método para obtener las formas de pago
                 string cufe = ObtenerCufe(factura.FacturaId); // Método para obtener el CUFE
 
@@ -66,13 +66,7 @@ namespace ModuloConsultasGiGas.Model
                     return;
                 }
 
-                // Crear un archivo temporal para guardar el PDF
-                string rutaArchivoTemporal = System.IO.Path.GetTempFileName();
-
-                // Llamar al método CrearPDF de la clase GenerarPDF
-                ModuloConsultasGiGas.VewModel.GenerarPDF.CrearPDF(rutaArchivoTemporal, emisor, factura, listaProductos, cufe, adquiriente, movimiento, encabezado1, listaFormaPago);
-
-                // Crear y configurar el SaveFileDialog
+                // Crear y configurar el SaveFileDialog antes de crear el PDF
                 SaveFileDialog saveFileDialog = new SaveFileDialog();
                 saveFileDialog.Filter = "PDF Files (*.pdf)|*.pdf";
                 saveFileDialog.Title = "Guardar archivo PDF";
@@ -83,8 +77,8 @@ namespace ModuloConsultasGiGas.Model
                 {
                     string rutaArchivo = saveFileDialog.FileName;
 
-                    // Copiar el archivo temporal a la ubicación seleccionada por el usuario
-                    System.IO.File.Copy(rutaArchivoTemporal, rutaArchivo, true);
+                    // Llamar al método CrearPDF de la clase GenerarPDF
+                    ModuloConsultasGiGas.VewModel.GenerarPDF.CrearPDF(rutaArchivo, emisor, factura, listaProductos, cufe, adquiriente, movimiento, encabezado1, listaFormaPago);
 
                     // Mensaje de confirmación al usuario
                     MessageBox.Show("El PDF ha sido guardado en: " + rutaArchivo);
@@ -94,9 +88,6 @@ namespace ModuloConsultasGiGas.Model
                     // El usuario canceló la operación
                     MessageBox.Show("Guardado cancelado.");
                 }
-
-                // Eliminar el archivo temporal
-                System.IO.File.Delete(rutaArchivoTemporal);
             }
             catch (Exception ex)
             {
@@ -104,6 +95,7 @@ namespace ModuloConsultasGiGas.Model
                 MessageBox.Show("Ocurrió un error al generar el PDF: " + ex.Message);
             }
         }
+
 
 
 
@@ -235,19 +227,29 @@ namespace ModuloConsultasGiGas.Model
 
         private string ObtenerCufe(string facturaId)
         {
-            // Aquí va la lógica para obtener el CUFE.
-            // Por ejemplo, si la información del CUFE está en la tabla "fac".
-            var tabla = "fac";
-            if (resultadosPorTabla.ContainsKey(tabla))
+            // Ruta al archivo temporal
+            string tempFilePathFacturas = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "facturas_temp.json");
+
+            // Leer el archivo JSON
+            string jsonContent = File.ReadAllText(tempFilePathFacturas);
+
+            // Deserializar el contenido del archivo en un objeto dinámico
+            dynamic facturasTemp = JsonConvert.DeserializeObject(jsonContent);
+
+            // Buscar el registro en la tabla 'xxxxccfc' donde la factura coincida con facturaId
+            var registro = ((IEnumerable<dynamic>)facturasTemp["xxxxccfc"])
+                           .FirstOrDefault(r => r.factura == facturaId);
+
+            // Si se encuentra el registro, retornar el valor de 'dato_cufe'
+            if (registro != null)
             {
-                var datosFactura = resultadosPorTabla[tabla].FirstOrDefault(f => f.ContainsKey("factura") && f["factura"].ToString() == facturaId);
-                if (datosFactura != null)
-                {
-                    return datosFactura["cufe"].ToString();
-                }
+                return registro.dato_cufe != null ? registro.dato_cufe.ToString() : null;
             }
+
+            // Si no se encuentra el registro, retornar null
             return null;
         }
+
 
         private Adquiriente ObtenerAdquiriente(string facturaId)
         {
@@ -329,58 +331,150 @@ namespace ModuloConsultasGiGas.Model
 
         private Movimiento ObtenerMovimiento(string facturaId)
         {
-            var tabla = "xxxxccfc";
-            if (resultadosPorTabla.ContainsKey(tabla))
+            // Ruta al archivo temporal
+            string tempFilePathFacturas = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "facturas_temp.json");
+
+            // Leer el archivo JSON
+            string jsonContent = File.ReadAllText(tempFilePathFacturas);
+
+            // Deserializar el contenido del archivo en un objeto dinámico
+            dynamic facturasTemp = JsonConvert.DeserializeObject(jsonContent);
+
+            // Inicializar el objeto Movimiento
+            Movimiento movimiento = new Movimiento();
+
+            // Buscar en la tabla 'xxxxccfc'
+            var movimientoData = ((IEnumerable<dynamic>)facturasTemp["xxxxccfc"])
+                                 .FirstOrDefault(m => m.factura == facturaId);
+
+            if (movimientoData != null)
             {
-                var datosMovimiento = resultadosPorTabla[tabla].FirstOrDefault(f => f.ContainsKey("factura") && f["factura"].ToString() == facturaId);
-                if (datosMovimiento != null)
+                // Asignar los valores al objeto Movimiento
+                movimiento.Nit = movimientoData.nit;
+                movimiento.Valor = movimientoData.valor != null ? Convert.ToDecimal(movimientoData.valor) : 0;
+                movimiento.Valor_iva = movimientoData.vriva != null ? Convert.ToDecimal(movimientoData.vriva) : 0;
+                movimiento.Valor_dsto = movimientoData.desctos != null ? Convert.ToDecimal(movimientoData.desctos) : 0;
+                movimiento.Valor_neto = movimientoData.gravada != null ? Convert.ToDecimal(movimientoData.gravada) : 0;
+                movimiento.Exentas = movimientoData.exentas != null ? Convert.ToDecimal(movimientoData.exentas) : 0;
+                movimiento.Fecha_Factura = movimientoData.fcruce != null ? Convert.ToDateTime(movimientoData.fcruce) : DateTime.MinValue;
+                movimiento.Hora_dig = movimientoData.hdigita;
+                movimiento.Retiene = movimientoData.rfuente != null ? Convert.ToDecimal(movimientoData.rfuente) : 0;
+                movimiento.Ipoconsumo = movimientoData.consumo != null ? Convert.ToDecimal(movimientoData.consumo) : 0;
+                movimiento.Numero_bolsa = movimientoData.nbolsa != null ? Convert.ToDecimal(movimientoData.nbolsa) : 0;
+                movimiento.Valor_bolsa = movimientoData.vbolsa != null ? Convert.ToDecimal(movimientoData.vbolsa) : 0;
+                movimiento.Dato_Cufe = movimientoData.dato_cufe;
+                movimiento.Dato_Qr = movimientoData.dato_qr;
+                movimiento.Numero = movimientoData.numero;
+                movimiento.Vendedor = movimientoData.electron;
+                movimiento.Dias = movimientoData.dias != null ? Convert.ToDecimal(movimientoData.dias) : 0;
+            }
+            else
+            {
+                // Si no se encuentra en 'xxxxccfc', buscar en 'xxxxcmbt' si es una devolución
+                var devolucionData = ((IEnumerable<dynamic>)facturasTemp["xxxxcmbt"])
+                                     .FirstOrDefault(m => m.factura == facturaId);
+
+                if (devolucionData != null)
                 {
-                    return new Movimiento
-                    {
-                        // Asigna las propiedades del Movimiento usando datosMovimiento
-                        // Ejemplo: Tipo = datosMovimiento["tipo"].ToString()
-                    };
+                    // Asignar los valores al objeto Movimiento para devoluciones
+                    movimiento.Nit = devolucionData.nit;
+                    movimiento.Valor = devolucionData.valor != null ? Convert.ToDecimal(devolucionData.valor) : 0;
+                    movimiento.Dato_Qr = devolucionData.dato_qr;
+                    movimiento.Nota_credito = devolucionData.debitos != null ? Convert.ToDecimal(devolucionData.debitos) : 0;
                 }
             }
-            return null;
+
+            return movimiento;
         }
 
-        private Encabezado ObtenerEncabezado(string facturaId)
+
+        private Encabezado ObtenerEncabezado(string facturaId, string terminal)
         {
-            var tabla = "xxxxterm";
-            if (resultadosPorTabla.ContainsKey(tabla))
+            // Ruta al archivo temporal
+            string tempFilePathFacturas = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "facturas_temp.json");
+
+            // Leer el archivo JSON
+            string jsonContent = File.ReadAllText(tempFilePathFacturas);
+
+            // Deserializar el contenido del archivo en un objeto dinámico
+            dynamic facturasTemp = JsonConvert.DeserializeObject(jsonContent);
+
+            // Inicializar el objeto Encabezado
+            Encabezado encabezado = new Encabezado();
+
+            // Buscar en la tabla 'xxxxterm' el registro que coincida con facturaId y terminal
+            var encabezadoData = ((IEnumerable<dynamic>)facturasTemp["xxxxterm"])
+                                 .FirstOrDefault(e => e.terminal == terminal);
+
+            if (encabezadoData != null)
             {
-                var datosEncabezado = resultadosPorTabla[tabla].FirstOrDefault(f => f.ContainsKey("factura") && f["factura"].ToString() == facturaId);
-                if (datosEncabezado != null)
-                {
-                    return new Encabezado
-                    {
-                        // Asigna las propiedades del Encabezado usando datosEncabezado
-                        // Ejemplo: Titulo = datosEncabezado["titulo"].ToString()
-                    };
-                }
+                // Asignar los valores al objeto Encabezado
+                encabezado.Autorizando = encabezadoData.resol_fe;
+                encabezado.Fecha_inicio = encabezadoData.f_inicio != null ? Convert.ToDateTime(encabezadoData.f_inicio) : DateTime.MinValue;
+                encabezado.Fecha_termina = encabezadoData.f_termina != null ? Convert.ToDateTime(encabezadoData.f_termina) : DateTime.MinValue;
+                encabezado.R_inicio = encabezadoData.r_inicio != null ? Convert.ToInt32(encabezadoData.r_inicio) : 0;
+                encabezado.R_termina = encabezadoData.r_termina != null ? Convert.ToInt32(encabezadoData.r_termina) : 0;
+                encabezado.Prefijo = encabezadoData.prefijo0;
+                encabezado.Resolucion = encabezadoData.resolucion;
+                encabezado.Notas = encabezadoData.notas;
+                encabezado.Nota_fin = encabezadoData.NOTA_FIN;
+                encabezado.Llave_tecnica = encabezadoData.llave_tecn;
             }
-            return null;
+
+            return encabezado;
         }
+                                                                                                                                                                                                                            
+
 
         private List<FormaPago> ObtenerFormasPago(string facturaId)
+{
+    // Ruta al archivo temporal
+    string tempFilePathFacturas = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "facturas_temp.json");
+
+    // Leer el archivo JSON
+    string jsonContent = File.ReadAllText(tempFilePathFacturas);
+
+    // Deserializar el contenido del archivo en un objeto dinámico
+    dynamic facturasTemp = JsonConvert.DeserializeObject(jsonContent);
+
+    // Inicializar la lista de formas de pago
+    var formasPago = new List<FormaPago>();
+
+    // Buscar en la tabla 'xxxxccpg' los registros que coincidan con la facturaId
+    var formasPagoData = ((IEnumerable<dynamic>)facturasTemp["xxxxccpg"])
+                         .Where(fp => fp.factura == facturaId);
+
+    // Mapear los datos a la clase FormaPago y agregarlos a la lista
+    foreach (var data in formasPagoData)
+    {
+        FormaPago formaPago = new FormaPago
         {
-            var tabla = "xxxxccpg";
-            var formasPago = new List<FormaPago>();
-            if (resultadosPorTabla.ContainsKey(tabla))
-            {
-                var datosFormasPago = resultadosPorTabla[tabla].Where(fp => fp.ContainsKey("factura") && fp["factura"].ToString() == facturaId).ToList();
-                foreach (var datosFormaPago in datosFormasPago)
-                {
-                    formasPago.Add(new FormaPago
-                    {
-                        // Asigna las propiedades de FormaPago usando datosFormaPago
-                        // Ejemplo: Metodo = datosFormaPago["metodo"].ToString()
-                    });
-                }
-            }
-            return formasPago;
-        }
+            // Si 'bancop' es nulo, asignar "00"
+            Id_forma = data.bancop != null ? data.bancop.ToString() : "00",
+
+            // Si 'codigo' es nulo, asignar null (o puedes usar otro valor predeterminado)
+            Codigo_forma = data.codigo?.ToString(),
+
+            // Si 'vrpago' es nulo, asignar 0.00m
+            Valor_pago = data.vrpago != null ? Convert.ToDecimal(data.vrpago) : 0.00m,
+
+            // Si 'fecha' es nulo, asignar DateTime.MinValue
+            Fecha_pago = data.fecha != null ? Convert.ToDateTime(data.fecha) : DateTime.MinValue,
+
+            // Si 'factura' es nulo, asignar null
+            Factura_pago = data.factura?.ToString(),
+
+            // Si 'tpago' es nulo, asignar 0
+            Terceros_pago = data.tpago != null ? Convert.ToInt32(data.tpago) : 0
+        };
+
+        formasPago.Add(formaPago);
+    }
+
+    // Retornar la lista de formas de pago
+    return formasPago;
+}
+
 
 
 

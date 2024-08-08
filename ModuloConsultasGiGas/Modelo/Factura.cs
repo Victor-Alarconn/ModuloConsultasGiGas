@@ -21,6 +21,7 @@ namespace ModuloConsultasGiGas.Modelo
         public string? Encabezado_NC { get; set; }
         public string? Articulos { get; set; }
         public string? Metodo { get; set; }
+        public string? Terminal { get; set; }
 
         public string? Tipo_movimiento { get; set; }
         public string? Notas { get; set; }

@@ -239,7 +239,8 @@ namespace ModuloConsultasGiGas
                             Cliente = fac.ContainsKey("nombre3") ? fac["nombre3"].ToString() : "",
                             Estado = fac.ContainsKey("estado") ? fac["estado"].ToString() : "",
                             Error = fac.ContainsKey("msm_error") ? fac["msm_error"].ToString() : "",
-                            Memo = fac.ContainsKey("dato_qr") ? fac["dato_qr"].ToString() : ""
+                            Memo = fac.ContainsKey("dato_qr") ? fac["dato_qr"].ToString() : "",
+                            Terminal = fac.ContainsKey("terminal") ? fac["terminal"].ToString() : ""
                         };
 
                         // Determinar si es una devolución
