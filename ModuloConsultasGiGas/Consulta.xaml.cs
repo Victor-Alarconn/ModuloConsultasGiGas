@@ -234,13 +234,14 @@ namespace ModuloConsultasGiGas
                     {
                         var factura = new Factura
                         {
-                            FacturaId = fac.ContainsKey("factura") ? fac["factura"].ToString() : "",
-                            Recibo = fac.ContainsKey("recibo") ? fac["recibo"].ToString() : "",
-                            Cliente = fac.ContainsKey("nombre3") ? fac["nombre3"].ToString() : "",
-                            Estado = fac.ContainsKey("estado") ? fac["estado"].ToString() : "",
-                            Error = fac.ContainsKey("msm_error") ? fac["msm_error"].ToString() : "",
-                            Memo = fac.ContainsKey("dato_qr") ? fac["dato_qr"].ToString() : "",
-                            Terminal = fac.ContainsKey("terminal") ? fac["terminal"].ToString() : ""
+                            FacturaId = fac.ContainsKey("factura") && fac["factura"] != null ? fac["factura"].ToString() : "",
+                            Recibo = fac.ContainsKey("recibo") && fac["recibo"] != null ? fac["recibo"].ToString() : "",
+                            Cliente = fac.ContainsKey("nombre3") && fac["nombre3"] != null ? fac["nombre3"].ToString() : "",
+                            Estado = fac.ContainsKey("estado") && fac["estado"] != null ? fac["estado"].ToString() : "",
+                            Error = fac.ContainsKey("msm_error") && fac["msm_error"] != null ? fac["msm_error"].ToString() : "",
+                            Memo = fac.ContainsKey("dato_qr") && fac["dato_qr"] != null ? fac["dato_qr"].ToString() : "",
+                            Terminal = fac.ContainsKey("terminal") && fac["terminal"] != null ? fac["terminal"].ToString() : "",
+                            Tipo_movimiento = fac.ContainsKey("tipo_mvt") && fac["tipo_mvt"] != null ? fac["tipo_mvt"].ToString() : "",
                         };
 
                         // Determinar si es una devolución

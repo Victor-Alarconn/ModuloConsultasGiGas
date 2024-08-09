@@ -11,6 +11,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -81,7 +82,17 @@ namespace ModuloConsultasGiGas.Model
                 SaveFileDialog saveFileDialog = new SaveFileDialog();
                 saveFileDialog.Filter = "PDF Files (*.pdf)|*.pdf";
                 saveFileDialog.Title = "Guardar archivo PDF";
-                saveFileDialog.FileName = "Factura_" + factura.FacturaId + ".pdf";
+
+                // Asignar el nombre del archivo basado en el valor de factura.Recibo
+                if (!string.IsNullOrEmpty(factura.Recibo) && factura.Recibo != "0")
+                {
+                    saveFileDialog.FileName = "NC_" + factura.Recibo + ".pdf";
+                    emisor.cude = ObtenerCude(factura.Recibo);
+                }
+                else
+                {
+                    saveFileDialog.FileName = "Factura_" + factura.FacturaId + ".pdf";
+                }
 
                 // Mostrar el diálogo al usuario
                 if (saveFileDialog.ShowDialog() == true)
@@ -106,6 +117,7 @@ namespace ModuloConsultasGiGas.Model
                 MessageBox.Show("Ocurrió un error al generar el PDF: " + ex.Message);
             }
         }
+
 
 
 
@@ -328,7 +340,8 @@ namespace ModuloConsultasGiGas.Model
                             Ciudad_emisor = selectedEmpresa.Ciudad_emisor,
                             Representante = selectedEmpresa.Representante,
                             Ica = selectedEmpresa.Ica,
-                            Logo_emisor = selectedEmpresa.Logo_emisor
+                            Logo_emisor = selectedEmpresa.Logo_emisor,
+                            Regimen_emisor = selectedEmpresa.Regimen_emisor
                         };
                     }
                 }
@@ -421,6 +434,58 @@ namespace ModuloConsultasGiGas.Model
             return null;
         }
 
+        private string ObtenerCude(string recibo)
+        {
+            try
+            {
+                // Ruta al archivo temporal
+                string tempFilePathFacturas = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "facturas_temp.json");
+
+                // Leer el archivo JSON
+                string jsonContent = File.ReadAllText(tempFilePathFacturas);
+
+                // Deserializar el contenido del archivo en un objeto dinámico
+                dynamic facturasTemp = JsonConvert.DeserializeObject(jsonContent);
+
+                // Buscar el registro en la tabla 'xxxxcmbt' donde el recibo coincida
+                var registro = ((IEnumerable<dynamic>)facturasTemp["xxxxcmbt"])
+                               .FirstOrDefault(r => r.recibo == recibo);
+
+                // Si no se encuentra el registro, retornar null
+                if (registro == null)
+                {
+                    return null;
+                }
+
+                // Verificar que el campo dato_qr no sea nulo
+                if (registro.dato_qr == null)
+                {
+                    return null;
+                }
+
+                // Deserializar el campo dato_qr, que es un JSON anidado
+                var datosQr = JsonConvert.DeserializeObject<List<dynamic>>(registro.dato_qr.ToString());
+
+                // Verificar que el JSON anidado no esté vacío y tenga un valor para "cufe/cude"
+                if (datosQr != null && datosQr.Count > 0 && datosQr[0]["cufe/cude"] != null)
+                {
+                    return datosQr[0]["cufe/cude"].ToString();
+                }
+
+                // Si no se encuentra el CUFE/CUDE, retornar "0"
+                return "0";
+            }
+            catch (Exception ex)
+            {
+                // Manejar cualquier excepción que ocurra y retornar un valor por defecto o null
+                MessageBox.Show("Ocurrió un error al obtener el CUDE: " + ex.Message);
+                return null;
+            }
+        }
+
+
+
+
 
         private Adquiriente ObtenerAdquiriente(string facturaId)
         {
@@ -472,7 +537,7 @@ namespace ModuloConsultasGiGas.Model
                                     Responsable = datosAdquiriente.ContainsKey("troactivo") ? Convert.ToDecimal(datosAdquiriente["troactivo"]) : 0,
                                     Correo_adqui = datosAdquiriente.ContainsKey("troemail") ? datosAdquiriente["troemail"].ToString() : null,
                                     Tipo_p = datosAdquiriente.ContainsKey("trotp_3ro") ? Convert.ToDecimal(datosAdquiriente["trotp_3ro"]) : 0,
-                                    Telefono_adqui = datosAdquiriente.ContainsKey("trocelular") ? datosAdquiriente["trocelular"].ToString() : null,
+                                    Telefono_adqui = datosAdquiriente.ContainsKey("trotelef") ? datosAdquiriente["trotelef"].ToString() : null,
                                     Tipo_doc = datosAdquiriente.ContainsKey("trotipo") ? datosAdquiriente["trotipo"].ToString() : null,
                                     Correo2 = datosAdquiriente.ContainsKey("troemail") ? datosAdquiriente["troemail"].ToString() : null
                                 };
@@ -598,53 +663,53 @@ namespace ModuloConsultasGiGas.Model
 
 
         private List<FormaPago> ObtenerFormasPago(string facturaId)
-{
-    // Ruta al archivo temporal
-    string tempFilePathFacturas = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "facturas_temp.json");
-
-    // Leer el archivo JSON
-    string jsonContent = File.ReadAllText(tempFilePathFacturas);
-
-    // Deserializar el contenido del archivo en un objeto dinámico
-    dynamic facturasTemp = JsonConvert.DeserializeObject(jsonContent);
-
-    // Inicializar la lista de formas de pago
-    var formasPago = new List<FormaPago>();
-
-    // Buscar en la tabla 'xxxxccpg' los registros que coincidan con la facturaId
-    var formasPagoData = ((IEnumerable<dynamic>)facturasTemp["xxxxccpg"])
-                         .Where(fp => fp.factura == facturaId);
-
-    // Mapear los datos a la clase FormaPago y agregarlos a la lista
-    foreach (var data in formasPagoData)
-    {
-        FormaPago formaPago = new FormaPago
         {
-            // Si 'bancop' es nulo, asignar "00"
-            Id_forma = data.bancop != null ? data.bancop.ToString() : "00",
+                // Ruta al archivo temporal
+                string tempFilePathFacturas = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "facturas_temp.json");
 
-            // Si 'codigo' es nulo, asignar null (o puedes usar otro valor predeterminado)
-            Codigo_forma = data.codigo?.ToString(),
+                // Leer el archivo JSON
+                string jsonContent = File.ReadAllText(tempFilePathFacturas);
 
-            // Si 'vrpago' es nulo, asignar 0.00m
-            Valor_pago = data.vrpago != null ? Convert.ToDecimal(data.vrpago) : 0.00m,
+                // Deserializar el contenido del archivo en un objeto dinámico
+                dynamic facturasTemp = JsonConvert.DeserializeObject(jsonContent);
 
-            // Si 'fecha' es nulo, asignar DateTime.MinValue
-            Fecha_pago = data.fecha != null ? Convert.ToDateTime(data.fecha) : DateTime.MinValue,
+                // Inicializar la lista de formas de pago
+                var formasPago = new List<FormaPago>();
 
-            // Si 'factura' es nulo, asignar null
-            Factura_pago = data.factura?.ToString(),
+                // Buscar en la tabla 'xxxxccpg' los registros que coincidan con la facturaId
+                var formasPagoData = ((IEnumerable<dynamic>)facturasTemp["xxxxccpg"])
+                                     .Where(fp => fp.factura == facturaId);
 
-            // Si 'tpago' es nulo, asignar 0
-            Terceros_pago = data.tpago != null ? Convert.ToInt32(data.tpago) : 0
-        };
+                // Mapear los datos a la clase FormaPago y agregarlos a la lista
+                foreach (var data in formasPagoData)
+                {
+                    FormaPago formaPago = new FormaPago
+                    {
+                        // Si 'bancop' es nulo, asignar "00"
+                        Id_forma = data.bancop != null ? data.bancop.ToString() : "00",
 
-        formasPago.Add(formaPago);
-    }
+                        // Si 'codigo' es nulo, asignar null (o puedes usar otro valor predeterminado)
+                        Codigo_forma = data.codigo?.ToString(),
 
-    // Retornar la lista de formas de pago
-    return formasPago;
-}
+                        // Si 'vrpago' es nulo, asignar 0.00m
+                        Valor_pago = data.vrpago != null ? Convert.ToDecimal(data.vrpago) : 0.00m,
+
+                        // Si 'fecha' es nulo, asignar DateTime.MinValue
+                        Fecha_pago = data.fecha != null ? Convert.ToDateTime(data.fecha) : DateTime.MinValue,
+
+                        // Si 'factura' es nulo, asignar null
+                        Factura_pago = data.factura?.ToString(),
+
+                        // Si 'tpago' es nulo, asignar 0
+                        Terceros_pago = data.tpago != null ? Convert.ToInt32(data.tpago) : 0
+                    };
+
+                    formasPago.Add(formaPago);
+                }
+
+                // Retornar la lista de formas de pago
+                return formasPago;
+            }
 
 
 

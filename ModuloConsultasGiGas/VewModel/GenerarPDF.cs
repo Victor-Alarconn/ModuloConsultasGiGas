@@ -14,6 +14,7 @@ using Document = iTextSharp.text.Document;
 using Image = iTextSharp.text.Image;
 using Font = iTextSharp.text.Font;
 using System.Drawing.Imaging;
+using System.Windows;
 
 namespace ModuloConsultasGiGas.VewModel
 {
@@ -255,7 +256,7 @@ namespace ModuloConsultasGiGas.VewModel
                 // Datos del adquiriente (ficticios)
                 string nombreAdquiriente = adquiriente.Nombre_adqu;
                 string identificacionAdquiriente = adquiriente.Nit_adqui;
-                string direccionAdquiriente = adquiriente.Codigo_municipio_adqui;
+                string direccionAdquiriente = adquiriente.Nombre_municipio_adqui;
                 string correoAdquiriente = adquiriente.Correo_adqui;
                 string telefonoAdquiriente = adquiriente.Telefono_adqui;
                 string Orden = "Orden de Compra: " + movimiento.Numero;
@@ -304,6 +305,10 @@ namespace ModuloConsultasGiGas.VewModel
                 // Crear la cuarta columna
                 if (emisor.Codigo_FormaPago_emisor == null)
                 {
+                    // Asignar "Efectivo" por defecto si es null
+                    emisor.Codigo_FormaPago_emisor = "Efectivo";
+
+                    // Recorrer la lista solo si la forma de pago no ha cambiado de "Efectivo"
                     foreach (var formaPago in listaFormaPago)
                     {
                         switch (formaPago.Id_forma)
@@ -331,6 +336,9 @@ namespace ModuloConsultasGiGas.VewModel
                     }
                 }
 
+            
+
+
                 string medioPago = (emisor.Codigo_FormaPago_emisor == "Crédito ACH") ? "Crédito" : "Contado";
 
                 string iOtrosDatos = "Medio de pago: " + medioPago + "\r\n" +
@@ -357,6 +365,14 @@ namespace ModuloConsultasGiGas.VewModel
                 cEmisionFactura.VerticalAlignment = Element.ALIGN_MIDDLE;
                 cEmisionFactura.Padding = 1;
 
+                DateTime fechaFacDate;
+                if (!DateTime.TryParse(fechaFac, out fechaFacDate))
+                {
+                    // Manejar el caso en que la conversión falla
+                    MessageBox.Show("La fecha de la factura no es válida.");
+                    return; // Salir o asignar un valor predeterminado
+                }
+
                 // Fecha de vencimiento 
                 DateTime fechaVencimiento;
                 if (decimal.TryParse(movimiento.Dias.ToString(), out decimal diasDecimal) && diasDecimal > 0)
@@ -366,7 +382,7 @@ namespace ModuloConsultasGiGas.VewModel
                 }
                 else
                 {
-                    fechaVencimiento = DateTime.Now;
+                    fechaVencimiento = fechaFacDate;
                 }
 
                 string iVenciFactura = "FECHA DE VENCIMIENTO\r\n" + fechaVencimiento.ToString("yyyy-MM-dd");
