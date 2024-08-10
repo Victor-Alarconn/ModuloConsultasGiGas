@@ -134,6 +134,13 @@ namespace ModuloConsultasGiGas.Model
         {
             try
             {
+
+                // Verificar si el estado de la factura es diferente de 4
+                if (factura.Estado != "4")
+                {
+                    MessageBox.Show("La factura no está en un estado válido para exportar el PDF.");
+                    return;
+                }
                 // Crear un cuadro de entrada para que el usuario ingrese la dirección de correo
                 string emailAddress = Microsoft.VisualBasic.Interaction.InputBox(
                     "Por favor, ingrese la dirección de correo electrónico a la que desea enviar la factura:",
@@ -148,6 +155,7 @@ namespace ModuloConsultasGiGas.Model
                     return;
                 }
 
+                // Obtener todos los datos necesarios para la generación del PDF
                 Emisor emisor = ObtenerEmisor(); // Método para obtener el emisor
                 List<Productos> listaProductos = ObtenerProductos(factura.FacturaId, factura.Recibo); // Método para obtener la lista de productos
                 Adquiriente adquiriente = ObtenerAdquiriente(factura.FacturaId); // Método para obtener el adquiriente
@@ -155,6 +163,18 @@ namespace ModuloConsultasGiGas.Model
                 Encabezado encabezado1 = ObtenerEncabezado(factura.FacturaId, factura.Terminal); // Método para obtener el encabezado
                 List<FormaPago> listaFormaPago = ObtenerFormasPago(factura.FacturaId); // Método para obtener las formas de pago
                 string cufe = ObtenerCufe(factura.FacturaId); // Método para obtener el CUFE
+                if (!string.IsNullOrEmpty(factura.Recibo) && factura.Recibo != "0")
+                {
+                    emisor.cude = ObtenerCude(factura.Recibo);
+                }
+
+                // Verifica que todos los datos sean válidos antes de proceder
+                if (emisor == null || listaProductos == null || cufe == null || adquiriente == null ||
+                    movimiento == null || encabezado1 == null || listaFormaPago == null)
+                {
+                    MessageBox.Show("Error al obtener los datos necesarios para generar el PDF.");
+                    return;
+                }
 
                 // Configuración del correo electrónico
                 string nitCompleto = emisor.Nit_emisor ?? "";
@@ -271,7 +291,7 @@ namespace ModuloConsultasGiGas.Model
 
                                 if (adquiriente.Nit_adqui != "222222222222")
                                 {
-                                    correoEnviado = await ModuloConsultasGiGas.VewModel.EnviarCorreo.Enviar(emisor, adquiriente, factura, zipStream.ToArray(), emailAddress);
+                                    correoEnviado = await ModuloConsultasGiGas.VewModel.EnviarCorreo.Enviar(emisor, adquiriente, factura, zipStream.ToArray(), nombreArchivoXML, emailAddress);
                                 }
                                 else
                                 {

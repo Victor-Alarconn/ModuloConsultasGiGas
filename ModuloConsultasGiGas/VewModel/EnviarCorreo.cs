@@ -12,7 +12,7 @@ namespace ModuloConsultasGiGas.VewModel
 {
     public class EnviarCorreo
     {
-        public static async Task<bool> Enviar(Emisor emisor, Adquiriente adquiriente, Factura factura, byte[] archivoAdjunto, string cufe)
+        public static async Task<bool> Enviar(Emisor emisor, Adquiriente adquiriente, Factura factura, byte[] archivoAdjunto, string cufe, string email)
         {
 
             if (string.IsNullOrEmpty(adquiriente.Correo_adqui))
@@ -23,8 +23,8 @@ namespace ModuloConsultasGiGas.VewModel
             // Configurar el cliente SMTP
             SmtpClient clienteSmtp = new SmtpClient("mail.rmsoft.com.co");
             clienteSmtp.Port = 587;
-            //clienteSmtp.Credentials = new NetworkCredential("facturaelectronica@rmsoft.com.co", "p6;li17^wU02");
-            clienteSmtp.Credentials = new NetworkCredential("facturaselectronicas@rmsoft.com.co", "[]Q^nFwROD[6");
+            clienteSmtp.Credentials = new NetworkCredential("facturaelectronica@rmsoft.com.co", "p6;li17^wU02");
+         //   clienteSmtp.Credentials = new NetworkCredential("facturaselectronicas@rmsoft.com.co", "[]Q^nFwROD[6");
             clienteSmtp.EnableSsl = true; // Habilitar SSL
 
 
@@ -46,14 +46,14 @@ namespace ModuloConsultasGiGas.VewModel
 
             // Crear el mensaje
             MailAddress direccionRemitente = new MailAddress("facturaelectronica@rmsoft.com.co", adquiriente.Nombre_adqu);
-            MailAddress direccionDestinatario = new MailAddress(adquiriente.Correo_adqui);
+            MailAddress direccionDestinatario = new MailAddress(email);
             MailMessage mensaje = new MailMessage(direccionRemitente, direccionDestinatario);
 
-            if (!string.IsNullOrEmpty(adquiriente.Correo2))
-            {
-                MailAddress direccionDestinatarioSecundario = new MailAddress(adquiriente.Correo2);
-                mensaje.To.Add(direccionDestinatarioSecundario);
-            }
+            //if (!string.IsNullOrEmpty(adquiriente.Correo2))
+            //{
+            //    MailAddress direccionDestinatarioSecundario = new MailAddress(adquiriente.Correo2);
+            //    mensaje.To.Add(direccionDestinatarioSecundario);
+            //}
             if (!string.IsNullOrEmpty(factura.Recibo) && factura.Recibo != "0" && factura.Tipo_movimiento == "NC")
             {
                 mensaje.Subject = $"{Nit}; {emisor.Nombre_emisor}; {PrefijoNC}; 91; {emisor.Nombre_emisor}";
