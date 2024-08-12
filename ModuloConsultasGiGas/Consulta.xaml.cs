@@ -378,9 +378,9 @@ namespace ModuloConsultasGiGas
 
             // Botón XML
             FrameworkElementFactory xmlButtonFactory = new FrameworkElementFactory(typeof(Button));
-            xmlButtonFactory.SetValue(Button.ContentProperty, "XML");
+            xmlButtonFactory.SetValue(Button.ContentProperty, "DIAN");
             xmlButtonFactory.SetValue(Button.MarginProperty, new Thickness(5));
-            xmlButtonFactory.SetBinding(Button.CommandProperty, new Binding("DataContext.ExportXmlCommand") { RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(ListView), 1) });
+            xmlButtonFactory.SetBinding(Button.CommandProperty, new Binding("DataContext.ConsultaDianCommand") { RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(ListView), 1) });
             xmlButtonFactory.SetBinding(Button.CommandParameterProperty, new Binding("."));
             stackPanelFactory.AppendChild(xmlButtonFactory);
 

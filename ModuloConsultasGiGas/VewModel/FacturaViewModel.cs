@@ -25,7 +25,7 @@ namespace ModuloConsultasGiGas.Model
         private string codigoEmpresaSeleccionada;
         private Dictionary<string, List<Dictionary<string, object>>> resultadosPorTabla;
         public ICommand ExportPdfCommand { get; private set; }
-        public ICommand ExportXmlCommand { get; private set; }
+        public ICommand ConsultaDianCommand { get; private set; }
         public ICommand SendEmailCommand { get; private set; }
 
         public FacturaViewModel( string tempFilePath)
@@ -33,7 +33,7 @@ namespace ModuloConsultasGiGas.Model
             this.tempFilePath = tempFilePath;
             
             ExportPdfCommand = new RelayCommand<Factura>(ExportPdf);
-            ExportXmlCommand = new RelayCommand<Factura>(ExportXml);
+            ConsultaDianCommand = new RelayCommand<Factura>(ConsultaDian);
             SendEmailCommand = new RelayCommand<Factura>(SendEmail);
         }
 
@@ -124,10 +124,10 @@ namespace ModuloConsultasGiGas.Model
 
 
 
-        private void ExportXml(Factura factura)
+        private void ConsultaDian(Factura factura)
         {
             // Mensaje de prueba para el botón XML
-            MessageBox.Show("Botón XML presionado para la factura: " + factura.FacturaId);
+            MessageBox.Show("Botón dian presionado para la factura: " + factura.FacturaId);
         }
 
         private async void SendEmail(Factura factura)
