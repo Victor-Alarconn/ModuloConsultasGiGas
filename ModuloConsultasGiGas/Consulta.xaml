@@ -69,8 +69,8 @@
                 <Label Content="Palabra" HorizontalAlignment="Left" Margin="486,67,0,0" VerticalAlignment="Top" Width="62"/>
                 <TextBox HorizontalAlignment="Left" Height="16" Margin="480,90,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="74" IsReadOnly="True"/>
 
-                <Button Content="Informes" HorizontalAlignment="Left" Height="19" Margin="600,23,0,0" VerticalAlignment="Top" Width="68"/>
-                <Button Content="Terminales" HorizontalAlignment="Left" Height="19" Margin="600,87,0,0" VerticalAlignment="Top" Width="68"/>
+                <!--<Button Content="Informes" HorizontalAlignment="Left" Height="19" Margin="600,23,0,0" VerticalAlignment="Top" Width="68"/>
+                <Button Content="Terminales" HorizontalAlignment="Left" Height="19" Margin="600,87,0,0" VerticalAlignment="Top" Width="68"/>-->
 
 
                 <Border CornerRadius="11" BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="29" Margin="14,125,0,0" VerticalAlignment="Top" Width="180">
@@ -84,7 +84,8 @@
                      Background="Transparent" 
                      BorderThickness="0"
                      FontSize="14"
-                     Padding="5,0,5,0"/>
+                     Padding="5,0,5,0"
+                     TextChanged="searchFactura_TextChanged"/>
                             <TextBlock Name="placeholderText1" 
                        VerticalAlignment="Center" 
                        HorizontalAlignment="Center"

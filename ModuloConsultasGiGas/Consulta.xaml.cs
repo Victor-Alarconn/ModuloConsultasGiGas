@@ -204,6 +204,18 @@ namespace ModuloConsultasGiGas
             }
         }
 
+        private void searchFactura_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            // Mostrar u ocultar el placeholder según el contenido del TextBox
+            if (searchFactura.Text.Length > 0)
+            {
+                placeholderText1.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                placeholderText1.Visibility = Visibility.Visible;
+            }
+        }
 
 
         private void BuscarYMostrarFacturas(string searchText)

@@ -18,10 +18,14 @@
 
   <ItemGroup>
     <None Remove="Imagenes\factura.png" />
+    <None Remove="Imagenes\logo.png" />
     <None Remove="Imagenes\lupa.png" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Imagenes\logo.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="LOGO.ico" />
   </ItemGroup>
 

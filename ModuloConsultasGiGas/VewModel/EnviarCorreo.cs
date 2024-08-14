@@ -76,8 +76,9 @@ namespace ModuloConsultasGiGas.VewModel
             mensaje.IsBodyHtml = true; // Establecer el cuerpo del mensaje como HTML
 
             // string rutaImagen = @"C:\Users\hp\source\repos\GeneradorCufe\xml\logo.png"; // Victor
-            string rutaImagen = @"C:\Users\Programacion01\source\repos\RepoVictor\GeneradorCufe\xml\logo.png"; // Oficina
-                                                                                                               //  string rutaImagen = @"C:\inetpub\xml\Imagenes\logo.png"; // Gigas
+            string rutaImagen = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Imagenes", "logo.png");
+            //  string rutaImagen = @"C:\inetpub\xml\Imagenes\logo.png"; // Gigas
+
             if (File.Exists(rutaImagen))
             {
                 // Agregar la imagen como un archivo adjunto al mensaje

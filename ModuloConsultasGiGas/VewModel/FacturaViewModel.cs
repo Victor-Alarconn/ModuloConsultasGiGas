@@ -119,15 +119,30 @@ namespace ModuloConsultasGiGas.Model
         }
 
 
-
-
-
-
-
-        private void ConsultaDian(Factura factura)
+        private void ConsultaDian(Factura factura) // Consulta en la dian por CUFE
         {
-            // Mensaje de prueba para el botón XML
-            MessageBox.Show("Botón dian presionado para la factura: " + factura.FacturaId);
+
+            // Obtener el CUFE utilizando el método ObtenerCufe
+            string cufe = ObtenerCufe(factura.FacturaId);
+
+            // Validar que el CUFE no sea null
+            if (!string.IsNullOrEmpty(cufe))
+            {
+                // Construir la URL del QRCode
+                string qrCodeUrl = "https://catalogo-vpfe.dian.gov.co/document/searchqr?documentkey=" + cufe;
+
+                // Abrir el navegador con la URL generada
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = qrCodeUrl,
+                    UseShellExecute = true // Esto asegura que el navegador predeterminado sea utilizado
+                });
+            }
+            else
+            {
+                // Mostrar un mensaje si no se encuentra el CUFE
+                MessageBox.Show("No se encontró el CUFE para la factura: " + factura.FacturaId);
+            }
         }
 
         private async void SendEmail(Factura factura)

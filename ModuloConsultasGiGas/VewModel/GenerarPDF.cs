@@ -98,6 +98,7 @@ namespace ModuloConsultasGiGas.VewModel
                 string factura1;
                 string representanteEmisor = "";
                 string ICA = "";
+                string Referencia = "";
 
                 if (regimenEmisor == "Natural")
                 {
@@ -112,11 +113,13 @@ namespace ModuloConsultasGiGas.VewModel
                 {
                     PrefijoNC = "NC" + factura.Recibo;
                     factura1 = "Nro. Doc: " + PrefijoNC;
+                    Referencia = "Factura: " + factura.FacturaId + "\n";
                 }
                 else if (!string.IsNullOrEmpty(factura.Recibo) && factura.Recibo != "0" && factura.Tipo_movimiento == "ND")
                 {
                     PrefijoNC = "ND" + factura.Recibo;
                     factura1 = "Nro. Doc: " + PrefijoNC;
+                    Referencia = "Factura: " + factura.FacturaId + "\n";
                 }
                 else
                 {
@@ -140,6 +143,7 @@ namespace ModuloConsultasGiGas.VewModel
                     $"{direccionEmisor}\n" +
                     $"{correoEmisor}\n" +
                     $"{telefonoEmisor}\n\n" +
+                    $"{Referencia}" +
                     $"{factura1}", fnt));
 
                 cDatosEmisor.Border = Rectangle.NO_BORDER;
@@ -239,12 +243,8 @@ namespace ModuloConsultasGiGas.VewModel
 
                 // Agregar qrCell a la tabla
                 table.AddCell(qrCell);
-
-                // Agregar tabla de qr y datos del emisor a la tercera columna (derecha)
-                encabezado.AddCell(table);
-
+                encabezado.AddCell(table); // Agregar tabla de qr y datos del emisor a la tercera columna (derecha)
                 documento.Add(encabezado);
-
 
                 // Segundo encabezado (Información del adquiriente)
                 PdfPTable encabezado2 = new PdfPTable(4);
@@ -302,13 +302,16 @@ namespace ModuloConsultasGiGas.VewModel
                 cAdquiriente.PaddingLeft = 3;
                 cAdquiriente.Rowspan = 1;
 
-                // Crear la cuarta columna
-                if (emisor.Codigo_FormaPago_emisor == null)
+                // Verificar si Dias es diferente de 0 o null
+                if (movimiento.Dias != null && movimiento.Dias != 0)
+                {
+                    emisor.Codigo_FormaPago_emisor = "Crédito ACH";
+                }
+                else if (emisor.Codigo_FormaPago_emisor == null)
                 {
                     // Asignar "Efectivo" por defecto si es null
                     emisor.Codigo_FormaPago_emisor = "Efectivo";
 
-                    // Recorrer la lista solo si la forma de pago no ha cambiado de "Efectivo"
                     foreach (var formaPago in listaFormaPago)
                     {
                         switch (formaPago.Id_forma)
@@ -336,15 +339,14 @@ namespace ModuloConsultasGiGas.VewModel
                     }
                 }
 
-            
-
-
+                // Asignar el medio de pago según la forma de pago
                 string medioPago = (emisor.Codigo_FormaPago_emisor == "Crédito ACH") ? "Crédito" : "Contado";
 
+                // Crear el texto con los datos adicionales
                 string iOtrosDatos = "Medio de pago: " + medioPago + "\r\n" +
-                                     "Forma de pago: " + emisor.Codigo_FormaPago_emisor + "\r\n" +
-                                     "Vendedor: " + movimiento.Vendedor + "\r\n" +
-                                     Orden;
+                                      "Forma de pago: " + emisor.Codigo_FormaPago_emisor + "\r\n" +
+                                      "Vendedor: " + movimiento.Vendedor + "\r\n" +
+                                      Orden;
 
                 PdfPCell cOtrosDatos = new PdfPCell(new Phrase(iOtrosDatos, FontFactory.GetFont("Helvetica", 8, Font.NORMAL)));
                 cOtrosDatos.BorderColor = BaseColor.GRAY;
@@ -369,7 +371,7 @@ namespace ModuloConsultasGiGas.VewModel
                 if (!DateTime.TryParse(fechaFac, out fechaFacDate))
                 {
                     // Manejar el caso en que la conversión falla
-                    MessageBox.Show("La fecha de la factura no es válida.");
+                    //   MessageBox.Show("La fecha de la factura no es válida.");
                     return; // Salir o asignar un valor predeterminado
                 }
 
@@ -413,13 +415,8 @@ namespace ModuloConsultasGiGas.VewModel
                 celdaNotas.HorizontalAlignment = Element.ALIGN_LEFT; // Alinear al centro horizontal
                 celdaNotas.Padding = 5; // Espaciado interno
 
-                // Agregar la celda al nuevo objeto PdfPTable
-                RenglonNotas.AddCell(celdaNotas);
-
-                // Añadir el nuevo objeto PdfPTable al documento
-                documento.Add(RenglonNotas);
-
-
+                RenglonNotas.AddCell(celdaNotas); // Agregar la celda al nuevo objeto PdfPTable
+                documento.Add(RenglonNotas); // Añadir el nuevo objeto PdfPTable al documento
 
                 // Crear un nuevo objeto PdfPTable para el nuevo renglón
                 PdfPTable nuevoRenglon = new PdfPTable(1);
@@ -432,11 +429,8 @@ namespace ModuloConsultasGiGas.VewModel
                 celdaNuevoDato.HorizontalAlignment = Element.ALIGN_LEFT; // Alinear a la izquierda
                 celdaNuevoDato.Padding = 2;
 
-                // Agregar la celda al nuevo objeto PdfPTable
-                nuevoRenglon.AddCell(celdaNuevoDato);
-
-                // Añadir el nuevo objeto PdfPTable al documento
-                documento.Add(nuevoRenglon);
+                nuevoRenglon.AddCell(celdaNuevoDato); // Agregar la celda al nuevo objeto PdfPTable
+                documento.Add(nuevoRenglon);  // Añadir el nuevo objeto PdfPTable al documento
 
                 if (!string.IsNullOrEmpty(factura.Recibo) && factura.Recibo != "0")
                 {
@@ -452,11 +446,8 @@ namespace ModuloConsultasGiGas.VewModel
                     celdaNuevoDatoCUDE.HorizontalAlignment = Element.ALIGN_LEFT; // Alinear a la izquierda
                     celdaNuevoDatoCUDE.Padding = 2;
 
-                    // Agregar la celda al nuevo objeto PdfPTable
-                    nuevoRenglonCUDE.AddCell(celdaNuevoDatoCUDE);
-
-                    // Añadir el nuevo objeto PdfPTable al documento
-                    documento.Add(nuevoRenglonCUDE);
+                    nuevoRenglonCUDE.AddCell(celdaNuevoDatoCUDE); // Agregar la celda al nuevo objeto PdfPTable
+                    documento.Add(nuevoRenglonCUDE);  // Añadir el nuevo objeto PdfPTable al documento
                 }
 
                 // Creación de la tabla con 9 columnas
