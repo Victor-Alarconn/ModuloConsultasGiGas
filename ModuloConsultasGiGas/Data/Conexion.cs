@@ -13,7 +13,7 @@ namespace ModuloConsultasGiGas.Data
 
         public Conexion(string databaseName)
         {
-            connectionString = $"Data Source=192.190.42.191; Database={databaseName}; User Id=root; Password=**qwerty**; ConvertZeroDateTime=True;";
+            connectionString = $"Data Source=192.190.42.191; Database={databaseName}; User Id=root; Password=**Adict057**; ConvertZeroDateTime=True;";
         }
 
         public MySqlConnection ObtenerConexion()
