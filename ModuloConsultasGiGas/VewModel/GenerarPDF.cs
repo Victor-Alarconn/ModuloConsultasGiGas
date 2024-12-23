@@ -367,11 +367,12 @@ namespace ModuloConsultasGiGas.VewModel
                 cEmisionFactura.VerticalAlignment = Element.ALIGN_MIDDLE;
                 cEmisionFactura.Padding = 1;
 
-                DateTime fechaFacDate;
-                if (!DateTime.TryParse(fechaFac, out fechaFacDate))
+                // Intentar convertir la fecha de la factura
+                if (!DateTime.TryParse(fechaFac, out DateTime fechaFacDate))
                 {
                     // Manejar el caso en que la conversión falla
-                    //   MessageBox.Show("La fecha de la factura no es válida.");
+                    // Puedes mostrar un mensaje de error o manejarlo de otra manera
+                    // MessageBox.Show("La fecha de la factura no es válida.");
                     return; // Salir o asignar un valor predeterminado
                 }
 
@@ -380,12 +381,13 @@ namespace ModuloConsultasGiGas.VewModel
                 if (decimal.TryParse(movimiento.Dias.ToString(), out decimal diasDecimal) && diasDecimal > 0)
                 {
                     int dias = (int)Math.Round(diasDecimal); // Convertir el decimal a entero, redondeándolo
-                    fechaVencimiento = DateTime.Now.AddDays(dias);
+                    fechaVencimiento = fechaFacDate.AddDays(dias); // Calcular la fecha de vencimiento a partir de la fecha de emisión
                 }
                 else
                 {
-                    fechaVencimiento = fechaFacDate;
+                    fechaVencimiento = fechaFacDate; // Si no hay días válidos, la fecha de vencimiento es igual a la fecha de emisión
                 }
+
 
                 string iVenciFactura = "FECHA DE VENCIMIENTO\r\n" + fechaVencimiento.ToString("yyyy-MM-dd");
                 PdfPCell cVenciFactura = new PdfPCell(new Phrase(iVenciFactura, FontFactory.GetFont("Helvetica", 8, Font.NORMAL)));

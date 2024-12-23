@@ -7,12 +7,13 @@ using System.Net.Mail;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using System.Globalization;
 
 namespace ModuloConsultasGiGas.VewModel
 {
     public class EnviarCorreo
     {
-        public static async Task<bool> Enviar(Emisor emisor, Adquiriente adquiriente, Factura factura, byte[] archivoAdjunto, string cufe, string email)
+        public static async Task<bool> Enviar(Emisor emisor, Adquiriente adquiriente, Factura factura, byte[] archivoAdjunto, string cufe, string email , Movimiento movimiento)
         {
 
             if (string.IsNullOrEmpty(adquiriente.Correo_adqui))
@@ -31,6 +32,11 @@ namespace ModuloConsultasGiGas.VewModel
             string nitCompleto = emisor.Nit_emisor ?? "";
             string[] partesNit = nitCompleto.Split('-');
             string Nit = partesNit.Length > 0 ? partesNit[0] : "";
+            DateTimeOffset horaConDesplazamiento = DateTimeOffset.ParseExact(movimiento.Hora_dig, "HH:mm:ss", CultureInfo.InvariantCulture);
+            string fechaFac = movimiento.Fecha_Factura.ToString("yyyy-MM-dd");
+
+            // Agregar el desplazamiento horario
+            string horaformateada = horaConDesplazamiento.ToString("HH:mm:sszzz", CultureInfo.InvariantCulture);
 
             string PrefijoNC = "";
             string Documento = "";
@@ -75,55 +81,89 @@ namespace ModuloConsultasGiGas.VewModel
 
             mensaje.IsBodyHtml = true; // Establecer el cuerpo del mensaje como HTML
 
-            // string rutaImagen = @"C:\Users\hp\source\repos\GeneradorCufe\xml\logo.png"; // Victor
-            string rutaImagen = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Imagenes", "logo.png");
-            //  string rutaImagen = @"C:\inetpub\xml\Imagenes\logo.png"; // Gigas
+            string cuerpo = "";
 
-            if (File.Exists(rutaImagen))
+            if (adquiriente.Nombre_adqu != "SABANALAC SA")
             {
-                // Agregar la imagen como un archivo adjunto al mensaje
-                Attachment imagenAdjunta = new Attachment(rutaImagen);
-                imagenAdjunta.ContentId = "qrCodeImage"; // Asignar un CID único para la imagen
-                mensaje.Attachments.Add(imagenAdjunta);
+                string rutaImagen = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Imagenes", "logo.png");
+
+                if (File.Exists(rutaImagen))
+                {
+                    // Agregar la imagen como un archivo adjunto al mensaje
+                    Attachment imagenAdjunta = new Attachment(rutaImagen);
+                    imagenAdjunta.ContentId = "qrCodeImage"; // Asignar un CID único para la imagen
+                    mensaje.Attachments.Add(imagenAdjunta);
+                }
+                else
+                {
+                    // La imagen no existe, puedes manejar esta situación según tus necesidades
+                    Console.WriteLine("La imagen no existe en la ruta especificada.");
+                }
+
+
+                cuerpo = $@"
+            <div style='text-align: center; border: 5px solid #ccc; border-radius: 10px; padding: 10px;'>
+                <div style='background-color: red; display: inline-block; padding: 5px 10px; border-radius: 5px; vertical-align: middle;'>
+                    <img src='cid:qrCodeImage' alt='Logo' style='width: 100px; height: auto; vertical-align: middle;' />
+                    <strong style='color: white;'>¡HOLA, {adquiriente.Nombre_adqu}!</strong>
+                </div>
+                <br/><br/>
+                <span style='font-size: 18px; color: red; text-decoration: underline;'>HA RECIBIDO UN DOCUMENTO ELECTRÓNICO</span><br/>
+                ADJUNTO A ESTE CORREO, A CONTINUACIÓN ENCONTRARÁ RESUMEN DE ESTE DOCUMENTO:<br/><br/>
+                <strong>Emisor:</strong> {emisor.Nombre_emisor}<br/>
+                <strong>Prefijo y número del documento:</strong> {Documento}<br/>
+                <strong>Tipo de documento:</strong> {tipo_documento}<br/>
+                <strong>Fecha de emisión:</strong> {fechaFac + " " + horaformateada}<br/>
+                <br/>
+                En caso de tener alguna inquietud respecto a la información contenida en el documento por favor comunicarse con {emisor.Nombre_emisor}<br/><br/>
+                <div style='background-color: #f2f2f2; padding: 10px;'>
+                    <strong style='color: black;'>INFORMACIÓN CONFIDENCIAL:</strong> Este correo electrónico y todos sus archivos adjuntos contienen información confidencial propiedad de {emisor.Nombre_emisor}. Está destinado únicamente para el uso del destinatario o la entidad a la que está dirigido. Si usted no es el destinatario previsto, queda prohibida cualquier copia, distribución, divulgación o almacenamiento de este mensaje, y puede estar sujeto a acciones legales. Si ha recibido este mensaje por error, le pedimos que lo elimine inmediatamente y se ponga en contacto con el remitente para informar del error, absténgase de divulgar su contenido.
+                </div>
+                <p style='font-size: 9px;'>Este es un sistema automático, por favor no responda este mensaje al correo remitente.<br/>
+                Recuerde agregar esta dirección de correo a sus contactos y lista de remitentes seguros para asegurarse de recibir nuestros mensajes.</p>
+                <br/><br/>
+                <strong> Cadena S.A.</strong><br/>
+                Proveedor Tecnológico de Facturación Electrónica<br/>
+                <strong>RMSOFT CASA DE SOFTWARE S.A.S</strong><br/>
+                Software Comercial<br/>
+                <a href='https://rmsoft.com.co/' style='color: #2190E3;'>https://rmsoft.com.co/</a>
+            </div>";
             }
             else
             {
-                // La imagen no existe, puedes manejar esta situación según tus necesidades
-                Console.WriteLine("La imagen no existe en la ruta especificada.");
+                cuerpo = $@"
+            <div style='text-align: center; border: 5px solid #ccc; border-radius: 10px; padding: 10px;'>
+                <div style='background-color: red; display: inline-block; padding: 5px 10px; border-radius: 5px; vertical-align: middle;'>
+                    <strong style='color: white;'>¡HOLA, {adquiriente.Nombre_adqu}!</strong>
+                </div>
+                <br/><br/>
+                <span style='font-size: 18px; color: red; text-decoration: underline;'>HA RECIBIDO UN DOCUMENTO ELECTRÓNICO</span><br/>
+                ADJUNTO A ESTE CORREO, A CONTINUACIÓN ENCONTRARÁ RESUMEN DE ESTE DOCUMENTO:<br/><br/>
+                <strong>Emisor:</strong> {emisor.Nombre_emisor}<br/>
+                <strong>Prefijo y número del documento:</strong> {Documento}<br/>
+                <strong>Tipo de documento:</strong> {tipo_documento}<br/>
+                <strong>Fecha de emisión:</strong> {fechaFac + " " + horaformateada}<br/>
+                <br/>
+                En caso de tener alguna inquietud respecto a la información contenida en el documento por favor comunicarse con {emisor.Nombre_emisor}<br/><br/>
+                <div style='background-color: #f2f2f2; padding: 10px;'>
+                    <strong style='color: black;'>INFORMACIÓN CONFIDENCIAL:</strong> Este correo electrónico y todos sus archivos adjuntos contienen información confidencial propiedad de {emisor.Nombre_emisor}. Está destinado únicamente para el uso del destinatario o la entidad a la que está dirigido. Si usted no es el destinatario previsto, queda prohibida cualquier copia, distribución, divulgación o almacenamiento de este mensaje, y puede estar sujeto a acciones legales. Si ha recibido este mensaje por error, le pedimos que lo elimine inmediatamente y se ponga en contacto con el remitente para informar del error, absténgase de divulgar su contenido.
+                </div>
+                <p style='font-size: 9px;'>Este es un sistema automático, por favor no responda este mensaje al correo remitente.<br/>
+                Recuerde agregar esta dirección de correo a sus contactos y lista de remitentes seguros para asegurarse de recibir nuestros mensajes.</p>
+                <br/><br/>
+                <strong> Cadena S.A.</strong><br/>
+                Proveedor Tecnológico de Facturación Electrónica<br/>
+                <strong>RMSOFT CASA DE SOFTWARE S.A.S</strong><br/>
+                Software Comercial<br/>
+            </div>";
             }
-
-            // Construir el cuerpo del mensaje en formato HTML
-            string cuerpo = $@"
-                        <div style='text-align: center; border: 5px solid #ccc; border-radius: 10px; padding: 10px;'>
-                            <div style='background-color: red; display: inline-block; padding: 5px 10px; border-radius: 5px; vertical-align: middle;'>
-                                <img src='cid:qrCodeImage' alt='Logo' style='width: 100px; height: auto; vertical-align: middle;' />
-                                <strong style='color: white;'>¡HOLA, {adquiriente.Nombre_adqu}!</strong>
-                            </div>
-                            <br/><br/>
-                            <span style='font-size: 18px; color: red; text-decoration: underline;'>HA RECIBIDO UN DOCUMENTO ELECTRÓNICO</span><br/>
-                            ADJUNTO A ESTE CORREO, A CONTINUACIÓN ENCONTRARÁ RESUMEN DE ESTE DOCUMENTO:<br/><br/>
-                            <strong>Emisor:</strong> {emisor.Nombre_emisor}<br/>
-                            <strong>Prefijo y número del documento:</strong> {Documento}<br/>
-                            <strong>Tipo de documento:</strong> {tipo_documento}<br/>
-                            <strong>Fecha de emisión:</strong> {DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}<br/>
-                            <br/>
-                            En caso de tener alguna inquietud respecto a la información contenida en el documento por favor comunicarse con {emisor.Nombre_emisor}<br/><br/>
-                            <div style='background-color: #f2f2f2; padding: 10px;'>
-                               <strong style='color: black;'>INFORMACIÓN CONFIDENCIAL:</strong> Este correo electrónico y todos sus archivos adjuntos contienen información confidencial propiedad de {emisor.Nombre_emisor}. Está destinado únicamente para el uso del destinatario o la entidad a la que está dirigido. Si usted no es el destinatario previsto, queda prohibida cualquier copia, distribución, divulgación o almacenamiento de este mensaje, y puede estar sujeto a acciones legales. Si ha recibido este mensaje por error, le pedimos que lo elimine inmediatamente y se ponga en contacto con el remitente para informar del error, absténgase de divulgar su contenido.
-                            </div>
-                            <p style='font-size: 9px;'>Este es un sistema automático, por favor no responda este mensaje al correo remitente.<br/>
-                           Recuerde agregar esta dirección de correo a sus contactos y lista de remitentes seguros para asegurarse de recibir nuestros mensajes.</p>
-                            <br/><br/>
-                            <strong> Cadena S.A.</strong><br/>
-                            Proveedor Tecnológico de Facturación Electrónica<br/>
-                           <strong>RMSOFT CASA DE SOFTWARE S.A.S</strong><br/>
-                            Software Comercial<br/>
-                           <a href='https://rmsoft.com.co/' style='color: #2190E3;'>https://rmsoft.com.co/</a>
-                        </div>";
             mensaje.Body = cuerpo;
 
             // Adjuntar el archivo ZIP al mensaje
-            mensaje.Attachments.Add(new Attachment(new MemoryStream(archivoAdjunto), $"{cufe}.zip"));
+            string cufeSinExtension = Path.GetFileNameWithoutExtension(cufe);
+
+            // Luego, asignas el nombre del archivo con la nueva extensión .zip
+            mensaje.Attachments.Add(new Attachment(new MemoryStream(archivoAdjunto), $"{cufeSinExtension}.zip"));
 
 
             try

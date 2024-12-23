@@ -306,7 +306,7 @@ namespace ModuloConsultasGiGas.Model
 
                                 if (adquiriente.Nit_adqui != "222222222222")
                                 {
-                                    correoEnviado = await ModuloConsultasGiGas.VewModel.EnviarCorreo.Enviar(emisor, adquiriente, factura, zipStream.ToArray(), nombreArchivoXML, emailAddress);
+                                    correoEnviado = await ModuloConsultasGiGas.VewModel.EnviarCorreo.Enviar(emisor, adquiriente, factura, zipStream.ToArray(), nombreArchivoXML, emailAddress, movimiento);
                                 }
                                 else
                                 {

@@ -337,30 +337,62 @@ namespace ModuloConsultasGiGas
             AgregarColumna("Recibo", "Recibo");
             AgregarColumna("Cliente", "Cliente");
             AgregarColumna("Estado", "Estado");
-            AgregarColumna("Msm Error", "Error");
-            AgregarColumna("Memo", "Memo");
+            AgregarColumna("Msm Error", "Error", mostrarToolTip: true); // Mostrar ToolTip para errores largos
+            AgregarColumna("Memo", "Memo", mostrarToolTip: true);       // Mostrar ToolTip para memo
             AgregarColumna("Fecha", "Fecha");
             AgregarColumna("Encabezado", "Encabezado");
             AgregarColumna("Encabezado_NC", "Encabezado_NC");
             AgregarColumna("Articulos", "Articulos");
             AgregarColumna("Metodos Pago", "Metodo");
-            AgregarColumnaAcciones(); 
+            AgregarColumnaAcciones();
         }
 
-        private void AgregarColumna(string header, string bindingPath)
+
+        private void AgregarColumna(string header, string bindingPath, bool mostrarToolTip = false)
         {
             GridViewColumn column = new GridViewColumn
             {
                 Header = header,
-                DisplayMemberBinding = new Binding(bindingPath),
-                Width = 100
+                Width = 100 // Ajusta el ancho de la columna según sea necesario
             };
 
-            // Asignar el evento de clic
+            if (mostrarToolTip)
+            {
+                // Crear un DataTemplate para celdas con ToolTip y TextTrimming
+                DataTemplate cellTemplate = new DataTemplate();
+
+                // Crear el TextBlock que contendrá el texto con puntos suspensivos si es demasiado largo
+                FrameworkElementFactory textBlockFactory = new FrameworkElementFactory(typeof(TextBlock));
+                textBlockFactory.SetBinding(TextBlock.TextProperty, new Binding(bindingPath));
+                textBlockFactory.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis);
+
+                // Crear el ToolTip correctamente vinculando el contenido
+                textBlockFactory.SetValue(TextBlock.ToolTipProperty, new Binding(bindingPath)
+                {
+                    // Envolver el texto en el ToolTip y limitar el ancho
+                    Converter = new ToolTipTextWrappingConverter(), // (Opcional) si necesitas convertir o ajustar el formato del contenido.
+                });
+
+                // Establecer el visual tree para la celda
+                cellTemplate.VisualTree = textBlockFactory;
+                column.CellTemplate = cellTemplate;
+            }
+            else
+            {
+                // Si no se requiere ToolTip, usar DisplayMemberBinding de manera estándar
+                column.DisplayMemberBinding = new Binding(bindingPath);
+            }
+
+            // Asignar el evento de clic en el header, si es necesario
             column.HeaderTemplate = CrearHeaderTemplate(header, bindingPath);
 
             facturasGridView.Columns.Add(column);
         }
+
+
+
+
+
 
         private void AgregarColumnaAcciones()
         {
